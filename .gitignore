@@ -1,0 +1,13 @@
+.env
+._*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.tools/
+data/resource-staging/
+data/examples/*.jpg
+data/examples/*.jpeg
+data/examples/*.png
+!data/examples/README.md
+evidence/
+site/

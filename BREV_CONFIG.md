@@ -1,0 +1,98 @@
+# Brev Launchable configuration
+
+Use these values in the Brev Launchable builder.
+
+## Details
+
+- **Name:** `Physical AI Visual Inspection Workshop`
+- **Description:** `Compares expected and observed workspace images with Cosmos Reason2, optional Cosmos3 Nano, labeled datasets, and OpenCV contour assistance.`
+- **Workshop guide:** `https://briandasantini.github.io/physical-ai-visual-inspection/`
+
+## Hardware
+
+- **Default:** 2× H100 80 GB
+- **Disk:** 250 GiB minimum
+- **Reason:** GPU 0 serves Reason2 2B or optional Nano; GPU 1 continuously serves Reason2 8B.
+
+## Software
+
+- **Runtime mode:** VM Mode
+- **Setup script:** Use the bootstrap script below. It installs or verifies Codex and Claude Code, links the workshop skill, logs Docker into NGC without printing the key, then starts `compose.yaml`.
+- **Jupyter:** Off
+
+VM Mode is required because the NIM containers come from a registry that needs an NGC
+credential. The Brev Launchable creation guide recommends VM Mode when containers need
+private-registry or API-key authentication. Expect a new deployment to take at least
+10–20 minutes while the VM, data, and NIM caches initialize; show this expectation in
+the participant instructions.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+SETUP_PATH="$(find "$HOME" -type f -path '*/physical-ai-visual-inspection*/setup.sh' -print -quit)"
+if [[ -z "$SETUP_PATH" ]]; then
+  echo "Could not find the physical-ai-visual-inspection setup.sh under $HOME." >&2
+  exit 1
+fi
+
+bash "$SETUP_PATH"
+```
+
+VM Mode is the workshop-safe default because the setup script performs the required NGC registry login before Docker pulls the private NIM images. The application still runs as the reproducible Compose stack.
+
+## Source
+
+- Use `https://github.com/briandasantini/physical-ai-visual-inspection` as the public
+  Launchable source.
+- Keep private datasets in a separate private NGC resource; do not add them to Git.
+
+## Network
+
+- **Secure Link name:** `Open Visual Inspection`
+- **Port:** `7860`
+- **Call to action:** On
+- Do not expose NIM ports publicly. Ports 8001, 8002, and 8003 bind to localhost only.
+
+Use a secured HTTP link rather than a public port. The Brev guide identifies secured
+tunnels as the intended access path for Gradio and similar participant applications.
+
+## Launch parameters
+
+| Name | Type | Required | Default | Purpose |
+|---|---|---:|---|---|
+| `NGC_API_KEY` | Text | Yes | None | Pulls and initializes the NIMs. Use a workshop-scoped key. |
+| `NIM_TAG` | Choice | No | `1.7.0` | Pins the tested VLM NIM release. |
+| `VISUAL_INSPECTION_INSTALL_NANO` | Choice | No | `true` | Pulls Nano but leaves it stopped. |
+| `VISUAL_INSPECTION_INSTALL_AGENT_CLIS` | Choice | No | `true` | Guarantees Codex and Claude Code are available in the VM. |
+| `VISUAL_INSPECTION_INSTALL_AGENT_SKILL` | Choice | No | `true` | Links the workshop skill for supported agents. |
+| `VISUAL_INSPECTION_CLAUDE_CHANNEL` | Choice | No | `stable` | Uses Anthropic's stable native release channel. |
+| `VISUAL_INSPECTION_DATA_PROFILE` | Choice | No | `workshop` | Selects the curated or full private data resource. |
+| `VISUAL_INSPECTION_DATA_RESOURCE` | Text | Yes | None | Private NGC resource path, without a version suffix. |
+| `VISUAL_INSPECTION_DATA_VERSION` | Text | No | `2026.08.13` | Pins the immutable dataset resource version. |
+| `VISUAL_INSPECTION_DOCS_URL` | Text | No | `https://briandasantini.github.io/physical-ai-visual-inspection/` | Canonical participant guide linked from the app. |
+
+## Access
+
+- **Publish to community:** Off. Do not submit this workshop to the public Launchables
+  catalog or the `brevdev/launchables` repository.
+- **View access:** Use **Anyone with the link** for an external workshop, or **Only my
+  organization** when every attendee belongs to the same Brev organization.
+- Share the direct Launchable URL only with approved participants.
+
+## Preflight
+
+1. Accept the governing terms for both Cosmos Reason2 NIMs in NGC.
+2. Publish and pin the approved `workshop` NGC resource version.
+3. Deploy once before the workshop so data hydration, model initialization, and image compatibility are proven.
+4. Open the secure link and verify both default NIM status indicators are green and Nano is off.
+5. Run one approved example with 8B and one with 2B.
+6. Stop the rehearsal instance after validation to preserve credits.
+
+## Agent access
+
+Codex and Claude Code run directly in the Brev terminal and each prompts for provider
+authentication on first use. Their credentials belong to the VM's Linux user and are
+not launch parameters. Cursor and VS Code remain optional remote-SSH clients. Use one
+VM or Linux account per operator if participants must keep their agent logins separate.
+Share `REMOTE_EDITORS.md` with participants who choose the remote-editor path.

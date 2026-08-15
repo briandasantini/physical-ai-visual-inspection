@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visual Inspection Workshop"
+  short_description: "Guide and evaluate visual inspection exercises"
+  default_prompt: "Use $visual-inspection-workshop to guide me through the next visual inspection exercise."

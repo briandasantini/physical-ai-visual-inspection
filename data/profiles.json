@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "workshop": {
+      "description": "Approved paired examples for the hands-on workshop.",
+      "resource": "",
+      "version": "2026.08.13",
+      "include_paths": [
+        "derived/round1",
+        "derived/workshop-evaluation"
+      ],
+      "required_paths": [
+        "derived/round1",
+        "derived/workshop-evaluation"
+      ]
+    },
+    "full": {
+      "description": "Validated private evaluation corpus, videos, and derived assets.",
+      "resource": "",
+      "version": "2026.08.13",
+      "include_paths": [
+        "raw/core",
+        "raw/source-videos",
+        "derived/round1",
+        "derived/workshop-evaluation",
+        "derived/workshop-pairs",
+        "derived/demo-frames",
+        "derived/slide-assets",
+        "manifests/catalog.json"
+      ],
+      "required_paths": [
+        "raw/core",
+        "derived/workshop-pairs"
+      ],
+      "excluded_sources": [
+        {
+          "path": "raw/extended",
+          "reason": "The 2026.08.13 source 7z archive is incomplete and must be replaced before publication."
+        }
+      ]
+    }
+  }
+}

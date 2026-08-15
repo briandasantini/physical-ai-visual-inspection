@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+container_id="$(
+  docker ps \
+    --filter label=com.docker.compose.project=visual-inspection \
+    --filter label=com.docker.compose.service=visual-inspection-ui \
+    --format '{{.ID}}' \
+    | head -n 1
+)"
+
+if [[ -z "$container_id" ]]; then
+  echo "Visual inspection UI container is not running. Start the stack with ./setup.sh." >&2
+  exit 1
+fi
+
+arguments=("$@")
+host_output=""
+container_output=""
+for ((index = 0; index < ${#arguments[@]}; index++)); do
+  case "${arguments[$index]}" in
+    --output)
+      if (( index + 1 >= ${#arguments[@]} )); then
+        echo "--output requires a path." >&2
+        exit 2
+      fi
+      host_output="${arguments[$((index + 1))]}"
+      container_output="/tmp/visual-inspection-cli-output-$$.json"
+      arguments[$((index + 1))]="$container_output"
+      ;;
+    --output=*)
+      host_output="${arguments[$index]#--output=}"
+      container_output="/tmp/visual-inspection-cli-output-$$.json"
+      arguments[$index]="--output=$container_output"
+      ;;
+  esac
+done
+
+docker exec "$container_id" python -m visual_inspection.cli "${arguments[@]}"
+
+if [[ -n "$host_output" ]]; then
+  if [[ "$host_output" != /* ]]; then
+    host_output="$PWD/$host_output"
+  fi
+  mkdir -p "$(dirname "$host_output")"
+  docker cp "$container_id:$container_output" "$host_output" >/dev/null
+  docker exec "$container_id" rm -f "$container_output"
+  echo "Evidence copied to $host_output"
+fi

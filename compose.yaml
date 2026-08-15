@@ -1,0 +1,111 @@
+name: visual-inspection
+
+services:
+  nim-reason2-2b:
+    image: nvcr.io/nim/nvidia/cosmos-reason2-2b:${NIM_TAG:-1.7.0}
+    runtime: nvidia
+    shm_size: 32gb
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:?NGC_API_KEY is required}
+    volumes:
+      - nim-reason2-2b-cache:/opt/nim/.cache
+    ports:
+      - "127.0.0.1:8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8000/v1/health/ready', timeout=5).raise_for_status()"]
+      interval: 15s
+      timeout: 10s
+      retries: 80
+      start_period: 5m
+    restart: unless-stopped
+
+  nim-reason2-8b:
+    image: nvcr.io/nim/nvidia/cosmos-reason2-8b:${NIM_TAG:-1.7.0}
+    runtime: nvidia
+    shm_size: 32gb
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:?NGC_API_KEY is required}
+    volumes:
+      - nim-reason2-8b-cache:/opt/nim/.cache
+    ports:
+      - "127.0.0.1:8002:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8000/v1/health/ready', timeout=5).raise_for_status()"]
+      interval: 15s
+      timeout: 10s
+      retries: 80
+      start_period: 5m
+    restart: unless-stopped
+
+  nim-cosmos3-nano:
+    image: nvcr.io/nim/nvidia/cosmos3-reasoner:${NIM_TAG:-1.7.0}
+    profiles: ["nano"]
+    runtime: nvidia
+    shm_size: 32gb
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:?NGC_API_KEY is required}
+      NIM_MODEL_SIZE: nano
+    volumes:
+      - nim-cosmos3-nano-cache:/opt/nim/.cache
+    ports:
+      - "127.0.0.1:8003:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8000/v1/health/ready', timeout=5).raise_for_status()"]
+      interval: 15s
+      timeout: 10s
+      retries: 80
+      start_period: 5m
+    restart: unless-stopped
+
+  visual-inspection-ui:
+    build:
+      context: ./app
+    environment:
+      NIM_2B_BASE_URL: http://nim-reason2-2b:8000/v1
+      NIM_8B_BASE_URL: http://nim-reason2-8b:8000/v1
+      NIM_NANO_BASE_URL: http://nim-cosmos3-nano:8000/v1
+      VISUAL_INSPECTION_DATA_ROOT: /data
+      VISUAL_INSPECTION_DATA_PROFILE: ${VISUAL_INSPECTION_DATA_PROFILE:-workshop}
+      VISUAL_INSPECTION_DATA_VERSION: ${VISUAL_INSPECTION_DATA_VERSION:-2026.08.13}
+      VISUAL_INSPECTION_DEFAULT_MODEL: reason2-8b
+      VISUAL_INSPECTION_DOCS_URL: ${VISUAL_INSPECTION_DOCS_URL:-https://briandasantini.github.io/physical-ai-visual-inspection/}
+    volumes:
+      - ${VISUAL_INSPECTION_DATA_DIR:-./data}:/data:ro
+    ports:
+      - "7860:7860"
+    depends_on:
+      - nim-reason2-2b
+      - nim-reason2-8b
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  nim-reason2-2b-cache:
+  nim-reason2-8b-cache:
+  nim-cosmos3-nano-cache:
