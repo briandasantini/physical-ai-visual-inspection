@@ -3,12 +3,19 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$ROOT_DIR/compose.yaml"
-NGC_CLI_VERSION="${NGC_CLI_VERSION:-4.10.0}"
 
 if [[ -z "${NGC_API_KEY:-}" ]]; then
   echo "NGC_API_KEY is required." >&2
   exit 1
 fi
+
+SECRET_DIR="${VISUAL_INSPECTION_SECRET_DIR:-$HOME/.secrets}"
+SECRET_FILE="$SECRET_DIR/visual-inspection-ngc-key"
+mkdir -p "$SECRET_DIR"
+chmod 700 "$SECRET_DIR"
+umask 077
+printf '%s' "$NGC_API_KEY" > "$SECRET_FILE"
+chmod 600 "$SECRET_FILE"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker is required. Use a Brev VM or Docker Compose environment." >&2
@@ -26,25 +33,6 @@ if (( GPU_COUNT < 2 )); then
   exit 1
 fi
 
-install_ngc_cli() {
-  if command -v ngc >/dev/null 2>&1; then
-    return
-  fi
-
-  local install_root="${VISUAL_INSPECTION_TOOL_HOME:-$HOME/.cache/visual-inspection/tools}/ngc-cli/$NGC_CLI_VERSION"
-  local ngc_binary="$install_root/ngc-cli/ngc"
-  if [[ ! -x "$ngc_binary" ]]; then
-    echo "Installing NGC CLI $NGC_CLI_VERSION..."
-    mkdir -p "$install_root"
-    curl -fsSL \
-      "https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/$NGC_CLI_VERSION/files/ngccli_linux.zip" \
-      -o "$install_root/ngccli_linux.zip"
-    unzip -q "$install_root/ngccli_linux.zip" -d "$install_root"
-    chmod +x "$ngc_binary"
-  fi
-  export PATH="$(dirname "$ngc_binary"):$PATH"
-}
-
 configure_data() {
   if [[ -n "${VISUAL_INSPECTION_DATA_DIR:-}" ]]; then
     if [[ ! -d "$VISUAL_INSPECTION_DATA_DIR" ]]; then
@@ -60,7 +48,6 @@ configure_data() {
     return
   fi
 
-  install_ngc_cli
   python3 "$ROOT_DIR/scripts/fetch-data.py" --profile "$profile"
   export VISUAL_INSPECTION_DATA_DIR="${VISUAL_INSPECTION_DATA_HOME:-$HOME/workspace/visual-inspection-data}/current"
 }

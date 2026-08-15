@@ -18,7 +18,8 @@ This is a workshop and evaluation system, not a production safety interlock.
 - The Gradio participant website runs on port 7860.
 - Docker Compose isolates all three services.
 - NIM caches use persistent Docker volumes.
-- Approved data is mounted read-only from a persistent Brev workspace directory.
+- Approved data is downloaded from SharePoint, verified, cached, and mounted read-only
+  from a persistent Brev workspace directory.
 
 The intended machine is a Brev VM with two H100-class GPUs. The tested NIM tag is
 `1.7.0`.
@@ -43,21 +44,22 @@ Code remain optional remote-SSH clients rather than launchable dependencies.
 - `app/src/visual_inspection/vision.py`: contour preprocessing.
 - `app/src/visual_inspection/nim_client.py`: health checks and structured NIM inference.
 - `app/src/visual_inspection/datasets.py`: workshop and evaluation dataset indexing.
-- `data/profiles.json`: approved workshop/full resource contents and versions.
+- `data/profiles.json`: approved workshop/full bundle contents and versions.
 - `scripts/fetch-data.py`: downloads, validates, caches, and atomically activates data.
-- `scripts/prepare-data-resource.py`: stages only approved paths for publication.
-- `scripts/publish-data-resource.sh`: uploads a version to NGC Private Registry.
+- `scripts/prepare-data-bundle.py`: builds a deterministic SharePoint bundle.
+- `scripts/organize-private-deliveries.py`: organizes untracked source deliveries.
 - `BREV_CONFIG.md`: values for the Brev Launchable builder.
 - `DATA_LAYOUT.md`: private data lifecycle and directory contract.
 
 ## Data contract
 
-Do not add private images, videos, archives, credentials, or inference exports to Git.
-Git contains code and manifests only. Private data belongs in two separate versioned
-NGC resources:
+Do not add private images, videos, archives, sharing links, credentials, or inference
+exports to Git. Git contains code and generic profile manifests only. Private data is
+distributed through verified SharePoint bundles:
 
 - `workshop`: curated first examples plus an approved evaluation subset.
-- `full`: raw and derived evaluation corpus for restricted environments.
+- `full`: extracted evaluation corpus plus every preserved original delivery for
+  restricted environments.
 
 On first launch, the selected resource is downloaded under
 `$HOME/workspace/visual-inspection-data/versions/<profile>/<version>`. The `current` symlink is
@@ -82,11 +84,12 @@ PYTHONPATH=app/src python3 -c 'from visual_inspection.ui import build_demo; buil
 ```
 
 Full end-to-end validation requires two supported NVIDIA GPUs, NGC access to both NIMs,
-and access to a configured private data resource.
+and an approved SharePoint data bundle link and checksum.
 
 ## Remaining deployment work
 
-1. Create separate private NGC resources for `workshop` and `full` data.
-2. Publish the pinned `2026.08.13` versions and set their resource paths.
+1. Prepare separate verified `workshop` and `full` SharePoint bundles.
+2. Upload the pinned `2026.08.15` bundles to an approved SharePoint location and create
+   read-only, expiring download links.
 3. Configure the final Brev Launchable and Secure Link on port 7860.
 4. Test a newly created instance from the final Launchable URL.

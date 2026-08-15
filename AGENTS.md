@@ -15,6 +15,8 @@ modifying this repository. For workshop guidance, also use
 - Never interpret a model `PASS` as authorization to release a robotic run.
 - Never expose `$HOME/.secrets/visual-inspection-ngc-key` or put credentials in commands,
   outputs, logs, commits, or evidence.
+- Never print, persist, or commit `VISUAL_INSPECTION_DATA_URL`; treat the SharePoint
+  download link as a secret.
 - Never add private images, archives, or inference evidence to Git.
 - Never run Nano and Reason2 2B together; use `scripts/select-model-set.sh`.
 - Ask before switching models, stopping Brev, or running a large batch.

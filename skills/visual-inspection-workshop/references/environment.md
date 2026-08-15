@@ -25,7 +25,7 @@ The organized private data is mounted read-only at `/data` in the app container.
 - `derived/round1/index.json`: curated first examples.
 - `derived/workshop-evaluation/index.json`: labeled evaluation pairs.
 
-Code belongs in Git. Private images and archives belong in the private data artifact.
+Code belongs in Git. Private images and archives belong in approved SharePoint storage.
 Experiment JSON belongs under the ignored `evidence/` directory.
 
 ## Agent entry points
@@ -39,7 +39,7 @@ claude
 ```
 
 The first run handles provider authentication. Never copy agent credentials into the
-repository, launch parameters, workshop evidence, or the shared NGC secret directory.
+repository, SharePoint links, workshop evidence, or the shared NGC secret directory.
 Cursor and VS Code may connect over SSH, but are not required inside the VM.
 
 ## Readiness and logs

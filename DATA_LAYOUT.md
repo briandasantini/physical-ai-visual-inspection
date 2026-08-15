@@ -1,84 +1,84 @@
 # Visual inspection data layout
 
-The Launchable keeps application code and customer data separate. Git contains the
-application and data profile manifests. Versioned private NGC resources contain the
-actual customer files.
+Git contains the application, documentation, generic profile manifests, and validation
+code. Approved private files live in SharePoint and are never committed.
+
+## Private source workspace
+
+An owner organizes customer deliveries locally before creating bundles:
 
 ```text
-/home/nvidia/visual-inspection/
-├── app/
-│   └── launchable/                 Clean application and deployment files
-├── data/
-│   ├── raw/
-│   │   ├── core/                   Canonical private image dataset
-│   │   ├── extended/               Reserved for validated extended dataset
-│   │   └── source-videos/          Original source videos
-│   ├── derived/
-│   │   ├── round1/                 Curated first examples
-│   │   ├── workshop-evaluation/   Labeled larger-set workshop subset
-│   │   ├── workshop-pairs/         Curated reference/live pairs
-│   │   ├── demo-frames/            Frames generated for prototype testing
-│   │   └── slide-assets/           Images extracted for workshop slides
-│   ├── archives/                   Original transfer archives
-│   └── manifests/
-│       └── catalog.json            File counts, bytes, and extensions
-└── logs/                           Setup and rehearsal logs
+private-data/
+├── raw/
+│   └── core/                         Extracted evaluation corpus
+├── derived/
+│   ├── round1/                       Curated first examples
+│   └── workshop-evaluation/          Labeled workshop subset
+├── received/
+│   └── originals/                    Exact files as received, unchanged
+└── manifests/
+    └── received-files.json           Size, SHA-256, integrity, and notes
 ```
 
-For new Launchable instances, the persistent cache is stored under:
+The full profile preserves invalid or incomplete received files unchanged and marks
+their integrity in the manifest. It never presents an invalid archive as usable data.
+
+## SharePoint layout
+
+```text
+Physical AI Visual Inspection/
+├── workshop/
+│   └── 2026.08.15/
+│       ├── visual-inspection-workshop-2026.08.15.tar
+│       └── visual-inspection-workshop-2026.08.15.tar.json
+├── full/
+│   └── 2026.08.15/
+│       ├── visual-inspection-full-2026.08.15.tar
+│       └── visual-inspection-full-2026.08.15.tar.json
+└── received/
+    └── originals/                    Individually browsable original deliveries
+```
+
+The workshop bundle contains only curated and approved evaluation pairs. The restricted
+full bundle additionally contains the extracted corpus and every preserved original
+delivery. Keeping originals separately browsable in SharePoint makes it possible to
+retrieve one source file without downloading the full bundle.
+
+## Brev cache
 
 ```text
 $HOME/workspace/visual-inspection-data/
 ├── versions/
-│   ├── workshop/2026.08.13/        Curated workshop resource
-│   └── full/2026.08.13/            Full private corpus resource
+│   ├── workshop/2026.08.15/
+│   └── full/2026.08.15/
 └── current -> versions/<profile>/<version>
 ```
 
+On first launch, `scripts/fetch-data.py` downloads the selected bundle through an
+approved SharePoint link, verifies the bundle SHA-256, rejects unsafe archive entries,
+verifies every internal file, and atomically switches `current`. Later starts of the
+same instance reuse the verified cache. A new instance needs a valid link again.
+
 ## Rules
 
-- Keep original images immutable under `data/raw`.
-- Put generated, paired, resized, or annotated images under `data/derived`.
-- Keep transfer archives until extracted contents pass count and size checks.
-- Do not include customer data in the public Launchable repository or container image.
-- Use the `workshop` profile for attendee-facing instances.
-- Use the `full` profile only for private evaluation instances.
-- Treat uploads and model outputs as ephemeral unless an explicit experiment export is requested.
+- Keep exact received files immutable under `received/originals`.
+- Keep extracted or generated files under `raw` and `derived`.
+- Never put private data, SharePoint links, credentials, or inference evidence in Git.
+- Use read-only SharePoint links with explicit recipients when headless download is
+  supported, or an approved expiring download link for automated Brev startup.
+- Do not enable **Block download** on a link used by the setup script.
+- Treat the SharePoint URL as a secret; do not print, persist, or add it as a reusable
+  Launchable default.
+- Use `workshop` for attendees and `full` only for restricted evaluation instances.
 
-## Lifecycle
-
-1. An owner organizes approved files once under the layout above.
-2. Owners prepare attendee-facing, manifest-indexed curated and evaluation collections.
-3. `prepare-data-resource.py` stages only the paths listed in `data/profiles.json`.
-4. `publish-data-resource.sh` publishes an immutable version to NGC Private Registry.
-5. `setup.sh` downloads and validates every file path, size, and SHA-256 on the first launch.
-6. Later container restarts and Brev stop/start cycles reuse the local `current` cache.
-7. A newly created or deleted-and-recreated instance downloads the pinned version again.
-
-The full corpus never belongs in Git. Git is for reproducible code and manifests;
-NGC Private Registry is the private system of record for the dataset artifacts.
-
-## Publish a version
-
-Create the private NGC resource once, then publish a profile version:
+## Prepare a bundle
 
 ```bash
-export NGC_API_KEY=<scoped-key>
-export VISUAL_INSPECTION_DATA_RESOURCE=<org>/<team>/visual-inspection-workshop-data
-export VISUAL_INSPECTION_DATA_VERSION=2026.08.13
-
-./scripts/publish-data-resource.sh \
-  workshop /home/nvidia/visual-inspection/data \
-  /home/nvidia/visual-inspection/resource-staging/workshop-2026.08.13
+python3 scripts/prepare-data-bundle.py \
+  workshop /path/to/private-data \
+  /path/to/visual-inspection-workshop-2026.08.15.tar
 ```
 
-Use a separate private resource name for the `full` profile so workshop access never
-implicitly grants access to the full corpus.
-
-## Refresh the manifest
-
-```bash
-python3 /home/nvidia/visual-inspection/app/scripts/catalog-data.py \
-  /home/nvidia/visual-inspection/data \
-  --output /home/nvidia/visual-inspection/data/manifests/catalog.json
-```
+The adjacent `.tar.json` file records the outer bundle checksum and byte counts. Upload
+both files to SharePoint. Configure `VISUAL_INSPECTION_DATA_SHA256` from that metadata,
+not from an unverified copy.

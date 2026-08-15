@@ -16,17 +16,21 @@ Does not contain:
 - private images or videos;
 - transfer archives;
 - inference evidence;
-- NGC or agent credentials.
+- SharePoint links, NGC keys, or agent credentials.
 
-## Private NGC resources
+## Private SharePoint data
 
-The attendee-facing `workshop` resource contains only the approved curated pairs and
-larger evaluation subset. A separate restricted `full` resource can hold validated raw
-and derived data without granting workshop attendees access to the entire corpus.
+The attendee-facing `workshop` bundle contains only the approved curated pairs and
+larger evaluation subset. A separate restricted `full` bundle contains the extracted
+evaluation corpus and every preserved original delivery. Original files are also kept
+individually browsable in a restricted SharePoint folder.
 
-Each resource version includes an inventory of file paths, byte sizes, and SHA-256
-checksums. First launch downloads to persistent Brev storage and activates the dataset
-only after validation succeeds.
+Each bundle includes an inventory of file paths, byte sizes, and SHA-256 checksums. Brev
+also verifies an outer bundle checksum before extraction. First launch downloads to
+persistent storage and activates the dataset only after validation succeeds.
+
+The extended source archive is preserved unchanged even though its received copy has
+invalid header data. It is marked unusable until a replacement is received.
 
 ## Runtime handling
 
@@ -35,3 +39,4 @@ only after validation succeeds.
 - The website does not persist uploads or inference outputs.
 - CLI evidence is written only when the participant supplies an output path.
 - Private data must never be committed to Git.
+- SharePoint links must never be committed, logged, or stored as reusable defaults.

@@ -3,8 +3,8 @@
   "profiles": {
     "workshop": {
       "description": "Approved paired examples for the hands-on workshop.",
-      "resource": "",
-      "version": "2026.08.13",
+      "version": "2026.08.15",
+      "bundle_sha256": "c6f6b99f4cf239c6238cad510a90981f3b1ced11c7471280de4d3a7d387bcd19",
       "include_paths": [
         "derived/round1",
         "derived/workshop-evaluation"
@@ -15,27 +15,27 @@
       ]
     },
     "full": {
-      "description": "Validated private evaluation corpus, videos, and derived assets.",
-      "resource": "",
-      "version": "2026.08.13",
+      "description": "Extracted evaluation corpus, workshop data, and every preserved original delivery.",
+      "version": "2026.08.15",
+      "bundle_sha256": "b34d340f23b9e7df33fc41f0275cd00e4860c57c43e9d83f5422b2bdb55d0da1",
       "include_paths": [
         "raw/core",
-        "raw/source-videos",
         "derived/round1",
         "derived/workshop-evaluation",
-        "derived/workshop-pairs",
-        "derived/demo-frames",
-        "derived/slide-assets",
-        "manifests/catalog.json"
+        "received/originals",
+        "manifests/received-files.json"
       ],
       "required_paths": [
         "raw/core",
-        "derived/workshop-pairs"
+        "derived/round1",
+        "derived/workshop-evaluation",
+        "received/originals",
+        "manifests/received-files.json"
       ],
-      "excluded_sources": [
+      "known_issues": [
         {
-          "path": "raw/extended",
-          "reason": "The 2026.08.13 source 7z archive is incomplete and must be replaced before publication."
+          "path": "received/originals/extended-dataset.7z",
+          "reason": "The received archive has invalid header data. Preserve it unchanged, but do not use it for evaluation until replaced."
         }
       ]
     }

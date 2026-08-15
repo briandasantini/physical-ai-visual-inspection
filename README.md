@@ -8,7 +8,7 @@ and observed workspace images.
 · [CLI guide](https://briandasantini.github.io/physical-ai-visual-inspection/cli/)
 
 The public repository contains code and documentation only. Approved workshop images
-are supplied separately through a private, versioned NGC resource.
+are supplied separately through a read-only, expiring SharePoint download link.
 
 ## What launches
 
@@ -34,11 +34,12 @@ Use a VM with two supported GPUs and at least 250 GiB of disk.
 ```bash
 cd <checkout>/physical-ai-visual-inspection
 export NGC_API_KEY=<workshop-scoped-key>
-export VISUAL_INSPECTION_DATA_RESOURCE=<org>/<team>/visual-inspection-workshop-data
+export VISUAL_INSPECTION_DATA_URL=<approved-expiring-sharepoint-download-link>
+export VISUAL_INSPECTION_DATA_SHA256=<pinned-bundle-sha256>
 ./setup.sh
 ```
 
-The first launch downloads the pinned private data resource, initializes both default
+The first launch downloads the pinned private SharePoint bundle, initializes both default
 NIMs, and pulls the optional Nano container image without starting it.
 Later runs on the same Brev instance reuse the data under `$HOME/workspace` and the
 persistent Docker model caches. A brand-new instance downloads them once automatically;
@@ -124,7 +125,7 @@ docker compose down
 Follow `BREV_CONFIG.md`. The intended Brev runtime is VM Mode with a setup script that authenticates to NGC and starts the isolated Compose stack. Deployers provide `NGC_API_KEY` as a required launch parameter.
 
 Attach a public Git repository when creating the Launchable. Keep all private images in
-a separate private NGC resource rather than adding them to the repository.
+an approved SharePoint location rather than adding them to the repository.
 
 ## Data handling
 
@@ -132,10 +133,11 @@ a separate private NGC resource rather than adding them to the repository.
 - The app does not write uploads or inference results to persistent storage.
 - Example data is mounted read-only.
 - Only licensed public examples belong under `data/examples`.
-- Approved datasets are versioned private NGC resources, not Git content.
+- Approved datasets are versioned SharePoint bundles, not Git content.
 - `VISUAL_INSPECTION_DATA_PROFILE=workshop` fetches the curated first examples and the approved
   larger evaluation subset.
-- `VISUAL_INSPECTION_DATA_PROFILE=full` is reserved for private evaluation environments.
+- `VISUAL_INSPECTION_DATA_PROFILE=full` includes the extracted evaluation corpus and
+  preserved original deliveries for restricted environments.
 - The full Brev data layout and immutability rules are defined in `DATA_LAYOUT.md`.
 
 To use an organized private dataset while developing in this repository:

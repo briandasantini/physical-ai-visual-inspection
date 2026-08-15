@@ -10,8 +10,9 @@ and exposes the participant website through a Brev Secure Link.
 2. Sign in to Brev.
 3. Choose the recommended two-GPU configuration.
 4. Enter the workshop-scoped `NGC_API_KEY` when prompted.
-5. Select **Deploy**.
-6. Wait for setup to finish and open **Open Visual Inspection**.
+5. Enter the approved SharePoint data link and pinned SHA-256 supplied by the facilitator.
+6. Select **Deploy**.
+7. Wait for setup to finish and open **Open Visual Inspection**.
 
 !!! info "First launch"
     A new instance must download model containers and the pinned workshop dataset.
@@ -50,6 +51,9 @@ workshop is complete.
 ## Credentials
 
 - The NGC key must be workshop-scoped and is entered as a Brev setup value.
+- The SharePoint link must be read-only, downloadable, and unexpired. Brev uses it only
+  during setup and does not persist it.
+- Treat both the NGC key and SharePoint link as secrets.
 - Codex and Claude authenticate separately with each participant's provider account.
 - Do not sign multiple personal agent accounts into one shared Linux user.
 - Never paste credentials into prompts, evidence files, Git, or screenshots.

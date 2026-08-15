@@ -45,7 +45,8 @@ VM Mode is the workshop-safe default because the setup script performs the requi
 
 - Use `https://github.com/briandasantini/physical-ai-visual-inspection` as the public
   Launchable source.
-- Keep private datasets in a separate private NGC resource; do not add them to Git.
+- Keep private datasets in approved SharePoint storage; do not add them or their sharing
+  links to Git.
 
 ## Network
 
@@ -67,9 +68,10 @@ tunnels as the intended access path for Gradio and similar participant applicati
 | `VISUAL_INSPECTION_INSTALL_AGENT_CLIS` | Choice | No | `true` | Guarantees Codex and Claude Code are available in the VM. |
 | `VISUAL_INSPECTION_INSTALL_AGENT_SKILL` | Choice | No | `true` | Links the workshop skill for supported agents. |
 | `VISUAL_INSPECTION_CLAUDE_CHANNEL` | Choice | No | `stable` | Uses Anthropic's stable native release channel. |
-| `VISUAL_INSPECTION_DATA_PROFILE` | Choice | No | `workshop` | Selects the curated or full private data resource. |
-| `VISUAL_INSPECTION_DATA_RESOURCE` | Text | Yes | None | Private NGC resource path, without a version suffix. |
-| `VISUAL_INSPECTION_DATA_VERSION` | Text | No | `2026.08.13` | Pins the immutable dataset resource version. |
+| `VISUAL_INSPECTION_DATA_PROFILE` | Choice | No | `workshop` | Selects the curated or restricted full bundle. |
+| `VISUAL_INSPECTION_DATA_URL` | Text | Yes | None | Read-only, expiring SharePoint download link. Treat as a secret and never set a reusable default. |
+| `VISUAL_INSPECTION_DATA_SHA256` | Text | Yes | `c6f6b99f4cf239c6238cad510a90981f3b1ced11c7471280de4d3a7d387bcd19` | Pinned SHA-256 for the default workshop bundle. Replace it when selecting `full`. |
+| `VISUAL_INSPECTION_DATA_VERSION` | Text | No | `2026.08.15` | Pins the immutable dataset bundle version. |
 | `VISUAL_INSPECTION_DOCS_URL` | Text | No | `https://briandasantini.github.io/physical-ai-visual-inspection/` | Canonical participant guide linked from the app. |
 
 ## Access
@@ -83,11 +85,13 @@ tunnels as the intended access path for Gradio and similar participant applicati
 ## Preflight
 
 1. Accept the governing terms for both Cosmos Reason2 NIMs in NGC.
-2. Publish and pin the approved `workshop` NGC resource version.
+2. Upload the verified `workshop` bundle to SharePoint, confirm its SHA-256, and create a
+   read-only link with an expiration after the workshop.
 3. Deploy once before the workshop so data hydration, model initialization, and image compatibility are proven.
 4. Open the secure link and verify both default NIM status indicators are green and Nano is off.
 5. Run one approved example with 8B and one with 2B.
-6. Stop the rehearsal instance after validation to preserve credits.
+6. Confirm neither setup logs nor container logs expose the SharePoint link or NGC key.
+7. Stop the rehearsal instance after validation to preserve credits.
 
 ## Agent access
 

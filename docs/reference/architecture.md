@@ -26,7 +26,8 @@ through a Brev Secure Link.
 ## Runtime behavior
 
 - `setup.sh` validates two NVIDIA GPUs.
-- The NGC CLI downloads and verifies the pinned private data resource.
+- The setup downloads the pinned SharePoint bundle and verifies both outer and per-file
+  SHA-256 checksums.
 - Docker authenticates to NGC without printing the key.
 - Reason2 2B and 8B start by default.
 - The Nano image is pulled but remains stopped.
