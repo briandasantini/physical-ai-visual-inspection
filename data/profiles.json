@@ -4,6 +4,10 @@
     "workshop": {
       "description": "Approved paired examples for the hands-on workshop.",
       "version": "2026.08.15",
+      "github_repository": "briandasantini/physical-ai-visual-inspection-data",
+      "github_release": "workshop-2026.08.15",
+      "github_asset": "visual-inspection-workshop-2026.08.15.tar",
+      "ngc_filename": "visual-inspection-workshop-2026.08.15.tar",
       "bundle_sha256": "c6f6b99f4cf239c6238cad510a90981f3b1ced11c7471280de4d3a7d387bcd19",
       "include_paths": [
         "derived/round1",

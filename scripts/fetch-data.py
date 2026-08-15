@@ -17,7 +17,7 @@ from pathlib import Path
 def parse_args() -> argparse.Namespace:
     script_dir = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
-        description="Download, verify, and activate a SharePoint data bundle."
+        description="Download, verify, and activate an approved data bundle."
     )
     parser.add_argument(
         "--profile", default=os.getenv("VISUAL_INSPECTION_DATA_PROFILE", "workshop")
@@ -36,6 +36,33 @@ def parse_args() -> argparse.Namespace:
                 str(Path.home() / "workspace" / "visual-inspection-data"),
             )
         ),
+    )
+    parser.add_argument(
+        "--source",
+        choices=("auto", "github", "ngc", "sharepoint"),
+        default=os.getenv("VISUAL_INSPECTION_DATA_SOURCE", "auto"),
+    )
+    parser.add_argument(
+        "--github-repository",
+        default=os.getenv("VISUAL_INSPECTION_DATA_GITHUB_REPOSITORY"),
+        help="Private GitHub repository in owner/repository form.",
+    )
+    parser.add_argument(
+        "--github-release",
+        default=os.getenv("VISUAL_INSPECTION_DATA_GITHUB_RELEASE"),
+    )
+    parser.add_argument(
+        "--github-asset",
+        default=os.getenv("VISUAL_INSPECTION_DATA_GITHUB_ASSET"),
+    )
+    parser.add_argument(
+        "--ngc-resource",
+        default=os.getenv("VISUAL_INSPECTION_DATA_NGC_RESOURCE"),
+        help="Private NGC resource in org/team/resource form.",
+    )
+    parser.add_argument(
+        "--ngc-filename",
+        default=os.getenv("VISUAL_INSPECTION_DATA_NGC_FILENAME"),
     )
     parser.add_argument("--url", default=os.getenv("VISUAL_INSPECTION_DATA_URL"))
     parser.add_argument("--sha256", default=os.getenv("VISUAL_INSPECTION_DATA_SHA256"))
@@ -138,10 +165,82 @@ def sharepoint_download_url(url: str) -> str:
     return url
 
 
-def download_bundle(url: str, destination: Path, expected_sha256: str) -> None:
+def ngc_download_url(resource: str, version: str, filename: str) -> str:
+    parts = resource.strip("/").split("/")
+    if len(parts) != 3 or any(not part or part in {".", ".."} for part in parts):
+        raise ValueError(
+            "VISUAL_INSPECTION_DATA_NGC_RESOURCE must use org/team/resource form"
+        )
+    org, team, resource_name = (
+        urllib.parse.quote(part, safe="") for part in parts
+    )
+    encoded_version = urllib.parse.quote(version, safe="")
+    encoded_filename = urllib.parse.quote(filename, safe="")
+    return (
+        f"https://api.ngc.nvidia.com/v2/org/{org}/team/{team}/resources/"
+        f"{resource_name}/versions/{encoded_version}/files/{encoded_filename}"
+    )
+
+
+def github_release_asset_url(
+    repository: str, release: str, asset_name: str, token: str
+) -> str:
+    parts = repository.strip("/").split("/")
+    if len(parts) != 2 or any(not part or part in {".", ".."} for part in parts):
+        raise ValueError(
+            "VISUAL_INSPECTION_DATA_GITHUB_REPOSITORY must use owner/repository form"
+        )
+    owner, repository_name = (
+        urllib.parse.quote(part, safe="") for part in parts
+    )
+    encoded_release = urllib.parse.quote(release, safe="")
+    metadata_url = (
+        f"https://api.github.com/repos/{owner}/{repository_name}/releases/tags/"
+        f"{encoded_release}"
+    )
+    request = urllib.request.Request(
+        metadata_url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "physical-ai-visual-inspection/1",
+            "X-GitHub-Api-Version": "2026-03-10",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            release_metadata = json.load(response)
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+        raise RuntimeError(
+            "GitHub release lookup failed. Confirm the repository, release, and token."
+        ) from error
+
+    for asset in release_metadata.get("assets", []):
+        if asset.get("name") == asset_name and isinstance(asset.get("id"), int):
+            return (
+                f"https://api.github.com/repos/{owner}/{repository_name}/releases/"
+                f"assets/{asset['id']}"
+            )
+    raise RuntimeError(f"GitHub release has no asset named {asset_name!r}")
+
+
+def download_bundle(
+    url: str,
+    destination: Path,
+    expected_sha256: str,
+    *,
+    source: str = "SharePoint",
+    bearer_token: str | None = None,
+    request_headers: dict[str, str] | None = None,
+) -> None:
+    headers = {"User-Agent": "physical-ai-visual-inspection/1"}
+    if bearer_token:
+        headers["Authorization"] = f"Bearer {bearer_token}"
+    if request_headers:
+        headers.update(request_headers)
     request = urllib.request.Request(
         sharepoint_download_url(url),
-        headers={"User-Agent": "physical-ai-visual-inspection/1"},
+        headers=headers,
     )
     digest = hashlib.sha256()
     try:
@@ -153,7 +252,7 @@ def download_bundle(url: str, destination: Path, expected_sha256: str) -> None:
                 output.write(chunk)
     except (urllib.error.URLError, TimeoutError) as error:
         raise RuntimeError(
-            "SharePoint download failed. Confirm the link allows download and has not expired."
+            f"{source} download failed. Confirm the resource and credentials are valid."
         ) from error
     actual = digest.hexdigest()
     if actual != expected_sha256:
@@ -192,6 +291,10 @@ def fetch_profile(
     url: str,
     expected_sha256: str,
     version: str,
+    *,
+    source: str = "sharepoint",
+    bearer_token: str | None = None,
+    request_headers: dict[str, str] | None = None,
 ) -> Path:
     if len(expected_sha256) != 64 or any(
         character not in "0123456789abcdef" for character in expected_sha256.lower()
@@ -213,14 +316,25 @@ def fetch_profile(
         bundle_path = download_root / "data-bundle.tar"
         extracted = download_root / "extracted"
         extracted.mkdir()
-        print("Downloading approved SharePoint data bundle...")
-        download_bundle(url, bundle_path, expected_sha256)
+        source_label = {
+            "github": "GitHub",
+            "ngc": "NGC",
+            "sharepoint": "SharePoint",
+        }.get(source, "approved source")
+        print(f"Downloading approved {source_label} data bundle...")
+        download_bundle(
+            url,
+            bundle_path,
+            expected_sha256,
+            source=source_label,
+            bearer_token=bearer_token,
+            request_headers=request_headers,
+        )
         try:
             safe_extract(bundle_path, extracted)
         except tarfile.TarError as error:
             raise RuntimeError(
-                "The SharePoint link did not return a valid data bundle. "
-                "Confirm that it is a direct download link."
+                f"The {source_label} download did not return a valid data bundle."
             ) from error
 
         dataset = extracted / "dataset"
@@ -236,7 +350,7 @@ def fetch_profile(
         (pending_target / ".visual-inspection-artifact.json").write_text(
             json.dumps(
                 {
-                    "source": "sharepoint",
+                    "source": source,
                     "profile": profile_name,
                     "version": version,
                     "bundle_sha256": expected_sha256,
@@ -259,19 +373,69 @@ def main() -> None:
     args = parse_args()
     profile = load_profile(args.profiles, args.profile)
     version = args.version or profile.get("version")
-    url = args.url
     expected_sha256 = args.sha256 or profile.get("bundle_sha256")
     if not version:
         raise SystemExit("No data version configured. Set VISUAL_INSPECTION_DATA_VERSION.")
-    if not url:
-        raise SystemExit(
-            "No SharePoint data link configured. Set VISUAL_INSPECTION_DATA_URL to an "
-            "approved, read-only, expiring download link."
-        )
     if not expected_sha256:
         raise SystemExit(
             "No bundle checksum configured. Set VISUAL_INSPECTION_DATA_SHA256."
         )
+
+    source = args.source
+    if source == "auto":
+        if args.github_repository or profile.get("github_repository"):
+            source = "github"
+        elif args.ngc_resource:
+            source = "ngc"
+        else:
+            source = "sharepoint"
+
+    bearer_token = None
+    request_headers = None
+    if source == "github":
+        repository = args.github_repository or profile.get("github_repository")
+        release = args.github_release or profile.get("github_release")
+        asset_name = args.github_asset or profile.get("github_asset")
+        token = os.getenv("VISUAL_INSPECTION_DATA_GITHUB_TOKEN")
+        if not repository:
+            raise SystemExit(
+                "No GitHub repository configured. Set "
+                "VISUAL_INSPECTION_DATA_GITHUB_REPOSITORY."
+            )
+        if not release or not asset_name:
+            raise SystemExit("No GitHub release or asset configured for this profile.")
+        if not token:
+            raise SystemExit(
+                "VISUAL_INSPECTION_DATA_GITHUB_TOKEN is required to download private data."
+            )
+        url = github_release_asset_url(repository, release, asset_name, token)
+        request_headers = {
+            "Accept": "application/octet-stream",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2026-03-10",
+        }
+    elif source == "ngc":
+        if not args.ngc_resource:
+            raise SystemExit(
+                "No NGC resource configured. Set VISUAL_INSPECTION_DATA_NGC_RESOURCE."
+            )
+        filename = args.ngc_filename or profile.get("ngc_filename")
+        if not filename:
+            raise SystemExit(
+                "No NGC filename configured. Set VISUAL_INSPECTION_DATA_NGC_FILENAME."
+            )
+        bearer_token = os.getenv("NGC_API_KEY")
+        if not bearer_token:
+            raise SystemExit("NGC_API_KEY is required to download private NGC data.")
+        url = ngc_download_url(args.ngc_resource, version, filename)
+    else:
+        url = args.url
+        if not url:
+            raise SystemExit(
+                "No SharePoint data link configured. Set VISUAL_INSPECTION_DATA_URL to "
+                "an approved download link."
+            )
+
     fetch_profile(
         args.profile,
         profile,
@@ -279,6 +443,9 @@ def main() -> None:
         url,
         expected_sha256,
         version,
+        source=source,
+        bearer_token=bearer_token,
+        request_headers=request_headers,
     )
 
 

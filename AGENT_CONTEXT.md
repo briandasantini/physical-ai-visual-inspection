@@ -18,8 +18,10 @@ This is a workshop and evaluation system, not a production safety interlock.
 - The Gradio participant website runs on port 7860.
 - Docker Compose isolates all three services.
 - NIM caches use persistent Docker volumes.
-- Approved data is downloaded from SharePoint, verified, cached, and mounted read-only
-  from a persistent Brev workspace directory.
+- Approved workshop data is downloaded from a private GitHub Release, verified, cached,
+  and mounted read-only from a persistent Brev workspace directory. SharePoint remains
+  the restricted system of record and fallback for the full archive; NGC supplies the
+  licensed NIM images.
 
 The intended machine is a Brev VM with two H100-class GPUs. The tested NIM tag is
 `1.7.0`.
@@ -46,7 +48,7 @@ Code remain optional remote-SSH clients rather than launchable dependencies.
 - `app/src/visual_inspection/datasets.py`: workshop and evaluation dataset indexing.
 - `data/profiles.json`: approved workshop/full bundle contents and versions.
 - `scripts/fetch-data.py`: downloads, validates, caches, and atomically activates data.
-- `scripts/prepare-data-bundle.py`: builds a deterministic SharePoint bundle.
+- `scripts/prepare-data-bundle.py`: builds a deterministic distribution bundle.
 - `scripts/organize-private-deliveries.py`: organizes untracked source deliveries.
 - `BREV_CONFIG.md`: values for the Brev Launchable builder.
 - `DATA_LAYOUT.md`: private data lifecycle and directory contract.
@@ -55,11 +57,12 @@ Code remain optional remote-SSH clients rather than launchable dependencies.
 
 Do not add private images, videos, archives, sharing links, credentials, or inference
 exports to Git. Git contains code and generic profile manifests only. Private data is
-distributed through verified SharePoint bundles:
+distributed through verified bundles:
 
-- `workshop`: curated first examples plus an approved evaluation subset.
-- `full`: extracted evaluation corpus plus every preserved original delivery for
-  restricted environments.
+- `workshop`: private GitHub Release containing curated first examples and an approved
+  evaluation subset.
+- `full`: restricted SharePoint bundle containing the extracted evaluation corpus plus
+  every preserved original delivery.
 
 On first launch, the selected resource is downloaded under
 `$HOME/workspace/visual-inspection-data/versions/<profile>/<version>`. The `current` symlink is
@@ -68,8 +71,8 @@ switched only after inventory validation. Later starts reuse the local cache.
 ## Validated behavior
 
 - The participant website builds with Gradio 6.20.0.
-- Twenty unit tests cover image preprocessing, NIM response parsing, dataset indexing,
-  CLI workflows, and tutorial behavior.
+- Unit tests cover image preprocessing, NIM response parsing, dataset indexing, data
+  downloads, CLI workflows, and tutorial behavior.
 - The data bootstrap has been exercised with a mock registry and skips a second download
   after validating the cached version.
 - The application path has run against both 2B and 8B NIMs on a two-H100 Brev instance.
@@ -84,12 +87,11 @@ PYTHONPATH=app/src python3 -c 'from visual_inspection.ui import build_demo; buil
 ```
 
 Full end-to-end validation requires two supported NVIDIA GPUs, NGC access to both NIMs,
-and an approved SharePoint data bundle link and checksum.
+and read access to the private workshop resource.
 
 ## Remaining deployment work
 
-1. Prepare separate verified `workshop` and `full` SharePoint bundles.
-2. Upload the pinned `2026.08.15` bundles to an approved SharePoint location and create
-   read-only, expiring download links.
+1. Publish the pinned `workshop-2026.08.15` asset in the private data repository.
+2. Create a fine-grained token limited to read-only repository contents.
 3. Configure the final Brev Launchable and Secure Link on port 7860.
 4. Test a newly created instance from the final Launchable URL.

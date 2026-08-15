@@ -17,7 +17,7 @@ IGNORED_NAMES = {".DS_Store"}
 def parse_args() -> argparse.Namespace:
     script_dir = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
-        description="Create a verified visual-inspection data bundle for SharePoint."
+        description="Create a verified visual-inspection data bundle for distribution."
     )
     parser.add_argument("profile")
     parser.add_argument("data_root", type=Path)

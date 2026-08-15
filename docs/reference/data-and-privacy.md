@@ -18,12 +18,13 @@ Does not contain:
 - inference evidence;
 - SharePoint links, NGC keys, or agent credentials.
 
-## Private SharePoint data
+## Private data distribution
 
 The attendee-facing `workshop` bundle contains only the approved curated pairs and
-larger evaluation subset. A separate restricted `full` bundle contains the extracted
-evaluation corpus and every preserved original delivery. Original files are also kept
-individually browsable in a restricted SharePoint folder.
+larger evaluation subset. It is published as a versioned private GitHub Release for
+headless Brev startup. A separate restricted SharePoint `full` bundle contains the
+extracted evaluation corpus and every preserved original delivery. Original files are
+also kept individually browsable in a restricted SharePoint folder.
 
 Each bundle includes an inventory of file paths, byte sizes, and SHA-256 checksums. Brev
 also verifies an outer bundle checksum before extraction. First launch downloads to
@@ -39,4 +40,6 @@ invalid header data. It is marked unusable until a replacement is received.
 - The website does not persist uploads or inference outputs.
 - CLI evidence is written only when the participant supplies an output path.
 - Private data must never be committed to Git.
-- SharePoint links must never be committed, logged, or stored as reusable defaults.
+- SharePoint links, NGC keys, and GitHub tokens must never be committed or logged.
+- Attendee deployments use a fine-grained read-only token limited to the private data
+  repository, never a broad personal token.

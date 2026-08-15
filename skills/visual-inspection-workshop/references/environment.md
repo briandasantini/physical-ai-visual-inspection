@@ -25,7 +25,8 @@ The organized private data is mounted read-only at `/data` in the app container.
 - `derived/round1/index.json`: curated first examples.
 - `derived/workshop-evaluation/index.json`: labeled evaluation pairs.
 
-Code belongs in Git. Private images and archives belong in approved SharePoint storage.
+Code belongs in the public Git repository. The attendee bundle belongs in a private
+GitHub Release; restricted source archives belong in approved SharePoint storage.
 Experiment JSON belongs under the ignored `evidence/` directory.
 
 ## Agent entry points

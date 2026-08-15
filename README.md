@@ -8,7 +8,8 @@ and observed workspace images.
 · [CLI guide](https://briandasantini.github.io/physical-ai-visual-inspection/cli/)
 
 The public repository contains code and documentation only. Approved workshop images
-are supplied separately through a read-only, expiring SharePoint download link.
+are supplied separately through a private GitHub Release. Restricted source archives
+remain in approved SharePoint storage, and NGC supplies only the licensed NIM images.
 
 ## What launches
 
@@ -34,12 +35,12 @@ Use a VM with two supported GPUs and at least 250 GiB of disk.
 ```bash
 cd <checkout>/physical-ai-visual-inspection
 export NGC_API_KEY=<workshop-scoped-key>
-export VISUAL_INSPECTION_DATA_URL=<approved-expiring-sharepoint-download-link>
+export VISUAL_INSPECTION_DATA_GITHUB_TOKEN=<fine-grained-read-only-token>
 export VISUAL_INSPECTION_DATA_SHA256=<pinned-bundle-sha256>
 ./setup.sh
 ```
 
-The first launch downloads the pinned private SharePoint bundle, initializes both default
+The first launch downloads the pinned private GitHub Release bundle, initializes both default
 NIMs, and pulls the optional Nano container image without starting it.
 Later runs on the same Brev instance reuse the data under `$HOME/workspace` and the
 persistent Docker model caches. A brand-new instance downloads them once automatically;
@@ -122,10 +123,14 @@ docker compose down
 
 ## Create the one-click Launchable
 
-Follow `BREV_CONFIG.md`. The intended Brev runtime is VM Mode with a setup script that authenticates to NGC and starts the isolated Compose stack. Deployers provide `NGC_API_KEY` as a required launch parameter.
+Follow `BREV_CONFIG.md`. The intended Brev runtime is VM Mode with a setup script that
+authenticates to NGC, downloads the private workshop release, and starts the isolated
+Compose stack. Deployers provide an approved `NGC_API_KEY` for the NIMs and a fine-grained
+read-only GitHub token for the private data repository.
 
-Attach a public Git repository when creating the Launchable. Keep all private images in
-an approved SharePoint location rather than adding them to the repository.
+Attach the public code repository when creating the Launchable. Keep workshop images in
+the separate private data repository and restricted source archives in approved
+SharePoint storage.
 
 ## Data handling
 
@@ -133,7 +138,8 @@ an approved SharePoint location rather than adding them to the repository.
 - The app does not write uploads or inference results to persistent storage.
 - Example data is mounted read-only.
 - Only licensed public examples belong under `data/examples`.
-- Approved datasets are versioned SharePoint bundles, not Git content.
+- Approved workshop datasets are private GitHub Release assets, not Git history.
+- Restricted source archives and the full bundle remain in approved SharePoint storage.
 - `VISUAL_INSPECTION_DATA_PROFILE=workshop` fetches the curated first examples and the approved
   larger evaluation subset.
 - `VISUAL_INSPECTION_DATA_PROFILE=full` includes the extracted evaluation corpus and

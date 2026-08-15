@@ -75,7 +75,8 @@ rerun, which may differ.
 
 - Never present `PASS` as permission to release an automated run.
 - Never expose, print, copy into Git, or include the NGC key in evidence.
-- Never expose, print, persist, or copy the SharePoint data link into Git or evidence.
+- Never expose, print, persist, or copy a SharePoint fallback link into Git or evidence.
+- Never expose, print, persist, or copy the private data GitHub token into evidence.
 - Never add private images, archives, or generated evidence to Git.
 - Never run Nano and Reason2 2B together; they share GPU 0.
 - Never hide incorrect verdicts, hallucinations, or Shift/Displace misses.

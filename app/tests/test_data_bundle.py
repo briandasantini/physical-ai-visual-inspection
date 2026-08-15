@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import io
 import json
@@ -5,6 +6,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +89,71 @@ class DataBundleTests(unittest.TestCase):
 
         self.assertIn("e=abc", normalized)
         self.assertIn("download=1", normalized)
+
+    def test_builds_private_ngc_resource_download_url(self):
+        url = FETCH.ngc_download_url(
+            "example-org/workshop-team/visual-inspection-data",
+            "2026.08.15",
+            "workshop bundle.tar",
+        )
+
+        self.assertEqual(
+            url,
+            "https://api.ngc.nvidia.com/v2/org/example-org/team/workshop-team/"
+            "resources/visual-inspection-data/versions/2026.08.15/files/"
+            "workshop%20bundle.tar",
+        )
+
+    def test_rejects_ngc_resource_without_team(self):
+        with self.assertRaisesRegex(ValueError, "org/team/resource"):
+            FETCH.ngc_download_url("example-org/resource", "1", "bundle.tar")
+
+    def test_resolves_private_github_release_asset(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = json.dumps(
+            {"assets": [{"id": 123, "name": "workshop.tar"}]}
+        ).encode()
+
+        with mock.patch.object(
+            FETCH.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            url = FETCH.github_release_asset_url(
+                "example/data", "workshop-1", "workshop.tar", "test-token"
+            )
+
+        self.assertEqual(
+            url,
+            "https://api.github.com/repos/example/data/releases/assets/123",
+        )
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-token")
+
+    def test_rejects_invalid_github_repository(self):
+        with self.assertRaisesRegex(ValueError, "owner/repository"):
+            FETCH.github_release_asset_url(
+                "example", "workshop-1", "workshop.tar", "test-token"
+            )
+
+    def test_private_ngc_download_uses_bearer_token(self):
+        payload = b"private bundle"
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.read.side_effect = [payload, b""]
+
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            FETCH.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            FETCH.download_bundle(
+                "https://api.ngc.nvidia.com/resource.tar",
+                Path(directory) / "bundle.tar",
+                hashlib.sha256(payload).hexdigest(),
+                source="NGC",
+                bearer_token="test-token",
+            )
+
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-token")
 
     def test_organizes_received_file_with_integrity_status(self):
         with tempfile.TemporaryDirectory() as directory:

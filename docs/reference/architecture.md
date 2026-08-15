@@ -26,7 +26,7 @@ through a Brev Secure Link.
 ## Runtime behavior
 
 - `setup.sh` validates two NVIDIA GPUs.
-- The setup downloads the pinned SharePoint bundle and verifies both outer and per-file
+- The setup downloads the pinned private GitHub Release asset and verifies outer and per-file
   SHA-256 checksums.
 - Docker authenticates to NGC without printing the key.
 - Reason2 2B and 8B start by default.

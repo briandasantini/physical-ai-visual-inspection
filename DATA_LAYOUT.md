@@ -1,7 +1,8 @@
 # Visual inspection data layout
 
 Git contains the application, documentation, generic profile manifests, and validation
-code. Approved private files live in SharePoint and are never committed.
+code. The attendee bundle lives as a private GitHub Release asset; restricted source
+archives live in SharePoint. Private files are never committed to Git history.
 
 ## Private source workspace
 
@@ -23,7 +24,21 @@ private-data/
 The full profile preserves invalid or incomplete received files unchanged and marks
 their integrity in the manifest. It never presents an invalid archive as usable data.
 
-## SharePoint layout
+## Private distribution
+
+The attendee Launchable downloads one immutable private GitHub Release:
+
+```text
+private: briandasantini/physical-ai-visual-inspection-data
+└── release: workshop-2026.08.15
+    ├── visual-inspection-workshop-2026.08.15.tar
+    └── visual-inspection-workshop-2026.08.15.tar.json
+```
+
+The bundle is attached to the Release and never committed to the repository history. A
+fine-grained token grants Contents: Read-only access to this repository only.
+
+## SharePoint archive
 
 ```text
 Physical AI Visual Inspection/
@@ -39,10 +54,10 @@ Physical AI Visual Inspection/
     └── originals/                    Individually browsable original deliveries
 ```
 
-The workshop bundle contains only curated and approved evaluation pairs. The restricted
-full bundle additionally contains the extracted corpus and every preserved original
-delivery. Keeping originals separately browsable in SharePoint makes it possible to
-retrieve one source file without downloading the full bundle.
+The NGC workshop bundle contains only curated and approved evaluation pairs. The
+restricted full SharePoint bundle additionally contains the extracted corpus and every
+preserved original delivery. Keeping originals separately browsable in SharePoint makes
+it possible to retrieve one source file without downloading the full bundle.
 
 ## Brev cache
 
@@ -54,18 +69,20 @@ $HOME/workspace/visual-inspection-data/
 └── current -> versions/<profile>/<version>
 ```
 
-On first launch, `scripts/fetch-data.py` downloads the selected bundle through an
-approved SharePoint link, verifies the bundle SHA-256, rejects unsafe archive entries,
-verifies every internal file, and atomically switches `current`. Later starts of the
-same instance reuse the verified cache. A new instance needs a valid link again.
+On first launch, `scripts/fetch-data.py` downloads the selected private GitHub Release
+asset, verifies the bundle SHA-256, rejects unsafe archive entries, verifies every
+internal file, and atomically switches `current`. Later starts of the same instance
+reuse the verified cache. Restricted facilitator deployments can select another backend.
 
 ## Rules
 
 - Keep exact received files immutable under `received/originals`.
 - Keep extracted or generated files under `raw` and `derived`.
 - Never put private data, SharePoint links, credentials, or inference evidence in Git.
-- Use read-only SharePoint links with explicit recipients when headless download is
-  supported, or an approved expiring download link for automated Brev startup.
+- Give the Launchable a fine-grained read-only token limited to the private data
+  repository; never use a broad personal access token.
+- Use SharePoint links with explicit recipients for the full archive; do not rely on
+  them for headless attendee startup.
 - Do not enable **Block download** on a link used by the setup script.
 - Treat the SharePoint URL as a secret; do not print, persist, or add it as a reusable
   Launchable default.
@@ -80,5 +97,6 @@ python3 scripts/prepare-data-bundle.py \
 ```
 
 The adjacent `.tar.json` file records the outer bundle checksum and byte counts. Upload
-both files to SharePoint. Configure `VISUAL_INSPECTION_DATA_SHA256` from that metadata,
-not from an unverified copy.
+both files as one private GitHub Release. Configure `VISUAL_INSPECTION_DATA_SHA256` from
+that metadata, not from an unverified copy. Preserve the full bundle and received source
+files in restricted SharePoint storage.

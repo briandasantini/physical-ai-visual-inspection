@@ -3,13 +3,13 @@
 ## Before sharing the Launchable
 
 1. Confirm the public repository contains code and documentation only.
-2. Upload and pin the approved `workshop` SharePoint bundle and checksum.
+2. Upload and pin the approved private GitHub Release asset and checksum.
 3. Confirm the Cosmos NIM terms have been accepted for the workshop organization.
-4. Create a read-only SharePoint download link that expires after the workshop.
+4. Provision a fine-grained Contents: Read-only token for the private data repository.
 5. Deploy a new two-GPU instance from the final Launchable.
 6. Wait for both default NIMs and the website to become ready.
 7. Run one `PASS` pair and one `FAIL` pair with both 2B and 8B.
-8. Verify that the dataset is read-only and no link or key appears in logs.
+8. Verify that the dataset is read-only and no key appears in logs.
 9. Stop the rehearsal instance after validation.
 
 ## Suggested run of show
