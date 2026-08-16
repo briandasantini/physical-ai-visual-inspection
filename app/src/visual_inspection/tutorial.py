@@ -7,9 +7,9 @@ TUTORIAL_STEPS = [
     "Round 1 baseline completed",
     "Baseline reasoning reviewed",
     "Larger-set baseline completed",
-    "Contour-assisted rerun completed",
+    "Matched contour rerun completed",
     "Weakest category identified",
-    "Evidence exported and finding recorded",
+    "Agent cue experiment exported",
 ]
 
 
@@ -22,17 +22,17 @@ WORKSHOP_LOOP = (
 PHASES = [
     (
         "1 · First examples",
-        "Run the curated first examples without contours. Compare verdicts and reasoning across available models.",
+        "Compare models on the curated examples, then inspect a matched default-contour rerun.",
         "25 minutes",
     ),
     (
         "2 · Larger set",
-        "Run a labeled sample from the larger evaluation set. Compare category metrics, misses, and false alarms.",
+        "Run a labeled sample twice. Compare verdict, action, item, and latency metrics plus raw misses.",
         "35 minutes",
     ),
     (
-        "3 · Add contours",
-        "Rerun the exact same examples with contour hints. Compare both the scores and the model reasoning.",
+        "3 · Agent experiment",
+        "Use the terminal agent to vary one pixel-cue method or parameter and interpret the evidence.",
         "30 minutes",
     ),
 ]

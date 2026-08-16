@@ -30,16 +30,18 @@ latency. Complete baseline review before introducing contours.
 ## Phase 2: larger set
 
 Select a category and fixed ordered sample from the labeled evaluation collection. Run
-baseline with one model. Review aggregate metrics and every incorrect row. Prioritize
-Shift/Displace because subtle movement is the known weak category.
+baseline with one model, then repeat the same sample with default contours. Review verdict,
+action, item, and latency metrics plus every incorrect row. Prioritize Shift/Displace.
 
-## Phase 3: contour assistance
+## Phase 3: agent cue experiment
 
-Rerun the exact same first examples and larger-set sample with the OpenCV contour view.
-Compare verdict changes, explanation grounding, newly recovered errors, and false alarms.
+Use the agent terminal to run a small `sweep` on one labeled pair. Keep the inspection
+prompt and model fixed while varying only difference method, threshold, or minimum area.
+Compare verdict, action, item, contour regions, changed-pixel ratio, preprocessing latency,
+NIM latency, and total latency.
 
-Contour configuration is threshold 25 and minimum area 3000. Red boxes are attention
-hints, not proof of a physical change.
+The default contour configuration is color difference, threshold 25, and minimum area
+3000. Red boxes are attention hints, not proof of a physical change.
 
 A correct verdict with an invented explanation is not a clean success. Preserve each
 run as evidence and compare only experiments that use the same labeled pairs.
@@ -51,5 +53,6 @@ Summarize:
 - strongest and weakest tested categories;
 - verdict errors and explanation hallucinations;
 - effect of contour assistance;
+- latency cost of the selected cue configuration;
 - capture, conventional-vision, VLM, and infrastructure failures separately;
 - required human controls and the next validation gate.

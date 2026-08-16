@@ -1,7 +1,7 @@
-# 4. Explore
+# 3. Agent Experiment Lab
 
-After the required three passes, design one controlled experiment. The purpose is to
-turn an observed weakness into a testable data or modeling question.
+Use the embedded terminal to turn an observed weakness into a reproducible cue-generation
+experiment. Ask Codex or Claude to explain the planned command before running it.
 
 ## Pick one hypothesis
 
@@ -21,9 +21,22 @@ Keep the camera, framing, and surrounding workspace fixed. Change only one facto
 - orientation;
 - contrast;
 - illumination;
-- contour threshold.
+- contour difference method;
+- contour threshold;
+- minimum contour area.
 
-Write the expected result before inference, then run baseline and contour-assisted modes.
+Keep the model and inspection prompt fixed. Start with:
+
+```bash
+./vision-inspect pairs --collection round1
+./vision-inspect sweep --pair <pair-id> --model reason2-8b \
+  --diff-methods color channel-max edges \
+  --thresholds 15 25 35 --min-areas 3000 \
+  --output evidence/cue-sweep.json
+```
+
+Compare verdict correctness, action correctness, item correctness, contour regions,
+changed-pixel ratio, preprocessing latency, NIM latency, and total latency.
 
 ## Turn the result into a data plan
 

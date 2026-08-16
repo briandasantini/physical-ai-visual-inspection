@@ -29,21 +29,22 @@ misses, and hallucinations. Do not add contours until all five baseline runs are
 ## 2. Larger set
 
 Choose a category and a fixed sample of the larger labeled evaluation set. Run the sample
-with one model and no contours. Review accuracy, precision, recall, F1, and every incorrect
-row. Repeat for the categories that matter most, especially Shift/Displace.
+with one model and no contours. Review accuracy, precision, recall, F1, action accuracy,
+item accuracy, NIM latency, and raw examples. Repeat the same ordered sample with default
+contours and inspect every incorrect row.
 
-## 3. Add contours
+## 3. Agent cue experiment
 
-Rerun the exact same first examples and larger-set sample. This time send the OpenCV
-contour view with the reference and live images. Compare:
+Use the persistent side terminal and ask Codex or Claude to design a small controlled sweep.
+Keep the model and inspection prompt fixed while varying one contour factor:
 
-- Did PASS/FAIL change?
-- Did the explanation become more specific and grounded?
-- Did contours introduce a false alarm?
-- Which failure category still needs a human or conventional vision control?
+- difference method: color, channel maximum, or edges;
+- pixel threshold;
+- minimum contour area.
 
-Saved results and fresh NIM versions can differ. Compare only runs that use the same
-labeled image pairs and input settings.
+Compare verdict, action, item, contour regions, changed-pixel ratio, preprocessing latency,
+NIM latency, and total latency. Saved results and fresh NIM versions can differ, so compare
+only matched runs.
 
 ## Optional exploration
 
@@ -52,5 +53,5 @@ Change one physical variable at a time and write the expected result before infe
 
 ## Interpretation rule
 
-A correct verdict with an invented explanation is not a clean success. A model PASS never
-authorizes a robotic run during this workshop.
+A correct verdict with an invented explanation is not a clean success. Misses are useful
+evidence when the pair, prompt, model, and cue settings are preserved.

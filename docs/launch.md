@@ -13,6 +13,7 @@ and exposes the participant website through a Brev Secure Link.
 5. Enter the fine-grained private-data GitHub token supplied by the facilitator.
 6. Select **Deploy**.
 7. Wait for setup to finish and open **Open Visual Inspection**.
+8. Use an **Open Jupyter terminal** button when the agent-guided experiment begins.
 
 !!! info "First launch"
     A new instance must download model containers and the pinned workshop dataset.
@@ -25,6 +26,7 @@ The website displays model status at the top. Begin when:
 - **Cosmos Reason2 8B** is green;
 - the curated and larger-set examples load;
 - optional Cosmos3 Nano is off unless the facilitator selected it.
+- JupyterLab opens in a new tab and `./vision-inspect status` runs from its Terminal.
 
 Terminal users can run:
 
@@ -53,6 +55,6 @@ workshop is complete.
 - The NGC key is used only for the licensed NIMs.
 - The GitHub token must have Contents: Read-only access to the private data repository.
 - Treat both values as secrets and never use a broad personal token.
-- Codex and Claude authenticate separately with each participant's provider account.
-- Do not sign multiple personal agent accounts into one shared Linux user.
+- Codex and Claude authenticate separately with the operator's provider account.
+- Use one authenticated agent operator per shared environment.
 - Never paste credentials into prompts, evidence files, Git, or screenshots.

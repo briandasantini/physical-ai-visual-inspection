@@ -26,6 +26,44 @@ class CliTests(unittest.TestCase):
 
         self.assertIsNone(args.live)
 
+    def test_parses_contour_controls(self):
+        args = build_parser().parse_args(
+            [
+                "inspect",
+                "--pair",
+                "r1_tilt",
+                "--threshold",
+                "35",
+                "--min-area",
+                "1500",
+                "--diff-method",
+                "edges",
+            ]
+        )
+
+        self.assertEqual(args.threshold, 35)
+        self.assertEqual(args.min_area, 1500)
+        self.assertEqual(args.diff_method, "edges")
+
+    def test_parses_parameter_sweep(self):
+        args = build_parser().parse_args(
+            [
+                "sweep",
+                "--pair",
+                "r1_tilt",
+                "--thresholds",
+                "15",
+                "25",
+                "--diff-methods",
+                "color",
+                "edges",
+            ]
+        )
+
+        self.assertEqual(args.command, "sweep")
+        self.assertEqual(args.thresholds, [15, 25])
+        self.assertEqual(args.diff_methods, ["color", "edges"])
+
 
 if __name__ == "__main__":
     unittest.main()

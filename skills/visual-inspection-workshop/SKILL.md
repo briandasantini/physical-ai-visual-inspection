@@ -5,8 +5,8 @@ description: Guide and evaluate a Physical AI visual inspection workshop using t
 
 # Visual Inspection Workshop
 
-Operate the workshop through its supported CLI and preserve the experiment's order and
-labels. Guide the participant; do not turn a model verdict into robotic authorization.
+Operate the workshop through its supported CLI and preserve the experiment's order,
+labels, prompt, cue settings, and latency evidence.
 
 ## Locate and preflight
 
@@ -28,6 +28,8 @@ direct NIM API calls so the website and agent use identical prompts and parsing.
 - **Compare models:** use the same pair and input mode for each selected model.
 - **Evaluate a category:** run a small fixed sample baseline first, then rerun the same
   sample with contours.
+- **Run the agent lab:** keep the prompt and model fixed, then sweep one supported contour
+  method or parameter and interpret both quality and latency.
 - **Test a custom workspace pair:** require expected, observed, and a participant-written
   expected result before inference.
 - **Use Nano:** read `references/environment.md`; activate it only when explicitly
@@ -52,6 +54,12 @@ scripts/run-visual-inspection.sh round1 --models reason2-8b --mode baseline \
 scripts/run-visual-inspection.sh batch --category Shift/Displace --count 10 \
   --model reason2-8b --mode both \
   --output evidence/shift-10.json
+
+# Compare visual-cue methods and parameters on one labeled pair.
+scripts/run-visual-inspection.sh sweep --pair <pair-id> --model reason2-8b \
+  --diff-methods color channel-max edges \
+  --thresholds 15 25 35 --min-areas 3000 \
+  --output evidence/cue-sweep.json
 ```
 
 Keep interactive batches at 10 pairs unless the user requests a different count. Warn
@@ -65,7 +73,7 @@ For every result, report these separately:
 2. Whether the explanation names the real object and location.
 3. Whether the explanation invents unsupported changes.
 4. Whether contour assistance changes the verdict or grounding.
-5. Latency as a secondary consideration after correctness.
+5. NIM, preprocessing, and total latency after correctness and grounding.
 
 Treat `FAIL` as the positive class for precision, recall, and F1. Do not reinterpret or
 rewrite dataset labels to match a model. Distinguish saved historical results from a new
@@ -73,7 +81,6 @@ rerun, which may differ.
 
 ## Guardrails
 
-- Never present `PASS` as permission to release an automated run.
 - Never expose, print, copy into Git, or include the NGC key in evidence.
 - Never expose, print, persist, or copy a SharePoint fallback link into Git or evidence.
 - Never expose, print, persist, or copy the private data GitHub token into evidence.

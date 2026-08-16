@@ -12,7 +12,6 @@ modifying this repository. For workshop guidance, also use
 - Judge verdict correctness and explanation grounding separately.
 - Keep generated JSON under `evidence/`.
 - Treat `FAIL` as the positive class for precision, recall, and F1.
-- Never interpret a model `PASS` as authorization to release a robotic run.
 - Never expose `$HOME/.secrets/visual-inspection-ngc-key` or put credentials in commands,
   outputs, logs, commits, or evidence.
 - Never print, persist, or commit `VISUAL_INSPECTION_DATA_GITHUB_TOKEN`.
@@ -25,6 +24,7 @@ modifying this repository. For workshop guidance, also use
 ## Code changes
 
 - Keep the CLI and browser app on shared dataset, vision, NIM, parsing, and metric code.
+- Keep cue experiments on supported methods and preserve all latency fields.
 - Preserve the configured curated-pair order and evaluation manifest.
 - Run `PYTHONPATH=app/src python3 -m unittest discover -s app/tests -p 'test_*.py'`.
 - Validate UI construction with

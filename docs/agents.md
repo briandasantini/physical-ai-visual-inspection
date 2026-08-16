@@ -34,7 +34,6 @@ The repository instructions teach the agent to:
 - save generated JSON under `evidence/`;
 - keep private images and credentials out of Git;
 - ask before switching model sets or running a large batch;
-- never treat model `PASS` as automated-run authorization.
 
 ## Editor path
 

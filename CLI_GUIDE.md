@@ -25,7 +25,7 @@ into the current Brev workspace directory.
 ./vision-inspect round1 --models reason2-8b --mode baseline \
   --output evidence/round1-baseline.json
 
-# Rerun the same five with contours.
+# Rerun the same five with the default contour settings.
 ./vision-inspect round1 --models reason2-8b --mode contour \
   --output evidence/round1-contour.json
 
@@ -37,7 +37,17 @@ into the current Brev workspace directory.
 ./vision-inspect batch --category Shift/Displace --count 10 \
   --model reason2-8b --mode both \
   --output evidence/shift-10.json
+
+# Test cue methods and pixel thresholds while preserving matched evidence.
+./vision-inspect sweep --pair <pair-id> --model reason2-8b \
+  --diff-methods color channel-max edges \
+  --thresholds 15 25 35 --min-areas 3000 \
+  --output evidence/cue-sweep.json
 ```
+
+All inference commands also accept `--diff-method`, `--threshold`, and `--min-area` for
+a fixed contour configuration. Batch evidence reports verdict, action, and item metrics
+plus NIM, preprocessing, and total latency.
 
 ## Optional Nano
 

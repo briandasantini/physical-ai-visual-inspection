@@ -17,11 +17,12 @@ remain in approved SharePoint storage, and NGC supplies only the licensed NIM im
 - Cosmos Reason2 8B NIM on GPU 1
 - Optional Cosmos3 Nano image installed but stopped; it can replace 2B on GPU 0
 - OpenCV contour preprocessing on CPU
-- Visual inspection Gradio UI on port 7860
-- Guided evaluation flow: first examples → larger set → contour-assisted rerun
-- Searchable dataset explorer with pair loading
+- Visual inspection Gradio UI on port 7860, with links to Brev's JupyterLab terminal
+- Guided flow: first examples → larger-set metrics → agent-led contour experiment
 - Parallel 8B-versus-2B workshop comparison
+- Verdict, action, item, contour, NIM latency, preprocessing latency, and total latency evidence
 - Persistent NIM model caches
+- Codex and Claude installed in the Brev host environment
 - Health checks and workshop-safe status reporting
 
 The workshop deliberately starts with a baseline (reference + live), then reruns the
@@ -48,10 +49,9 @@ attendees never upload files manually.
 
 Open `http://<instance>:7860`, or configure a Brev Secure Link on port 7860.
 
-The secure link opens the participant website directly. **Start Here** covers readiness
-and safety; **Workshop Tutorial** provides timed, sequential exercises, expected evidence,
-a progress checklist, controlled capture instructions, troubleshooting, and the closing decision.
-Participants do not need terminal access for the normal hands-on flow.
+The secure link opens the participant website directly. The first two phases use guided
+web controls; the third uses the Brev-hosted JupyterLab terminal. Sections 1 and 2 also
+include buttons that open JupyterLab in a new tab for optional agent-guided work.
 
 The same workshop is also available as a CLI. See `CLI_GUIDE.md`, or start with:
 
@@ -64,16 +64,17 @@ The same workshop is also available as a CLI. See `CLI_GUIDE.md`, or start with:
 ## Agent-ready workshop
 
 The repository includes a portable `visual-inspection-workshop` skill plus native entry
-instructions for Codex, Claude Code, and GitHub Copilot. `setup.sh` guarantees that the
-Codex and Claude Code CLIs are available, then links the skill into the Brev user's
-agent directories. Existing working CLI installations are preserved. Agents learn to:
+instructions for Codex, Claude Code, and GitHub Copilot. Setup installs Codex and Claude
+on the Brev host and links the workshop skill into each agent directory. Existing working
+CLI installations are preserved. Agents learn to:
 
-- follow first examples → larger set → contour rerun;
+- follow first examples → larger set → agent cue experiment;
 - use the supported CLI and preserve JSON evidence;
 - compare verdict correctness and explanation grounding;
+- compare action/item grounding and all latency components;
+- run controlled cue-method, threshold, and region-area sweeps;
 - protect customer data and the NGC credential;
-- keep Nano off unless a facilitator explicitly selects it;
-- preserve the safety boundary around model `PASS` results.
+- keep Nano off unless a facilitator explicitly selects it.
 
 Reinstall or refresh the links manually with:
 
@@ -82,10 +83,12 @@ Reinstall or refresh the links manually with:
 ./scripts/install-agent-skill.sh
 ```
 
-Participants can run an agent directly inside the Brev VM:
+Participants can use either Jupyter button in the website, open **Terminal** from the
+JupyterLab Launcher, and start an agent from the repository:
 
 ```bash
-cd "$HOME/workspace/physical-ai-visual-inspection/physical-ai-visual-inspection"
+cd /home/nvidia/physical-ai-visual-inspection
+./vision-inspect status
 codex
 # or
 claude
@@ -94,9 +97,8 @@ claude
 The first run asks the participant to authenticate with their own provider account.
 Setup never stores or shares agent credentials. Cursor and VS Code are optional: a
 participant can instead connect either editor to Brev over SSH and work in the same
-repository. Because CLI authentication is stored in the Brev Linux user's home, do not
-have multiple people sign personal accounts into one shared VM user; use one instance or
-Linux account per operator when credential isolation is required.
+repository. Because authentication persists in the environment's terminal home, use one
+agent operator per shared environment and remove the environment when the workshop is complete.
 
 For copy-paste setup commands and troubleshooting, see `REMOTE_EDITORS.md`.
 
@@ -172,9 +174,11 @@ docker compose exec visual-inspection-ui python -m visual_inspection.smoke \
   --model reason2-8b
 ```
 
-## Known limitation
+## Known evaluation gap
 
-This is a workshop system, not a production safety interlock. Small Shift/Displace errors remain the primary unresolved benchmark gap and must not be hidden behind the overall score.
+Small Shift/Displace errors remain the primary unresolved benchmark gap and must not be
+hidden behind the overall score. Compare verdict accuracy with action/item grounding and
+the raw response.
 
 ## License
 

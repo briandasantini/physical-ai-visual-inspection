@@ -37,16 +37,12 @@ what evidence or post-training might improve it**.
 5. Save the evidence.
 6. Change one input and repeat on the same pair.
 
-!!! warning "Safety boundary"
-    This workshop evaluates model behavior. A model `PASS` is never authorization to
-    release an automated or robotic run.
-
 ## Choose your path
 
 === "Browser workshop"
 
-    Use the Brev **Open Visual Inspection** secure link. Everything required for the
-    normal hands-on flow is available in the participant website.
+    Use the Brev **Open Visual Inspection** secure link for the guided controls. Agent
+    sections include a button that opens the Brev JupyterLab terminal in a new tab.
 
 === "Terminal"
 
@@ -55,8 +51,9 @@ what evidence or post-training might improve it**.
 
 === "Coding agent"
 
-    Open a terminal inside Brev and start `codex` or `claude`. The repository provides
-    the workshop skill and safety instructions automatically.
+    Open either **Jupyter terminal** button, create a Terminal from the JupyterLab Launcher,
+    and start `codex` or `claude`. The repository provides the workshop skill and experiment
+    instructions automatically.
 
 [Launch and connect](launch.md){ .launch-button }
 
@@ -67,5 +64,6 @@ By the end, your evidence should answer:
 - Which change categories are reliably detected?
 - When is the verdict correct but the explanation unsupported?
 - Do contour cues improve grounding, introduce false alarms, or have no effect?
+- What accuracy or grounding gain is obtained for the added preprocessing and total latency?
 - Which failures require conventional vision controls, better prompts, or post-training?
 - What labeled examples should be collected next?

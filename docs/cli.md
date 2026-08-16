@@ -36,6 +36,21 @@ clients, parser, and metric functions.
   --output evidence/shift-10.json
 ```
 
+The summary reports verdict metrics, action/item grounding, NIM latency, contour
+preprocessing latency, and total latency. Representative raw outputs remain in the JSON.
+
+## Agent experiment
+
+```bash
+./vision-inspect sweep --pair <pair-id> --model reason2-8b \
+  --diff-methods color channel-max edges \
+  --thresholds 15 25 35 --min-areas 3000 \
+  --output evidence/cue-sweep.json
+```
+
+Use `--diff-method`, `--threshold`, and `--min-area` on `inspect`, `round1`, or `batch`
+when you want one fixed contour configuration rather than a sweep.
+
 ## Optional Nano
 
 Nano shares GPU 0 with Reason2 2B and is off by default. Only the facilitator should

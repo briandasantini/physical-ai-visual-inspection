@@ -34,6 +34,27 @@ class ContourDiffTests(unittest.TestCase):
 
         self.assertEqual(result.image.size, (500, 300))
 
+    def test_supported_methods_find_large_change(self):
+        reference = np.zeros((400, 400, 3), dtype=np.uint8)
+        live = reference.copy()
+        live[80:240, 100:280] = 255
+
+        for method in ("color", "channel-max", "edges"):
+            with self.subTest(method=method):
+                result = build_contour_diff(
+                    Image.fromarray(reference),
+                    Image.fromarray(live),
+                    method=method,
+                    min_area=100,
+                )
+                self.assertGreaterEqual(len(result.regions), 1)
+
+    def test_rejects_unsupported_method(self):
+        image = Image.fromarray(np.zeros((100, 100, 3), dtype=np.uint8))
+
+        with self.assertRaisesRegex(ValueError, "Unsupported contour method"):
+            build_contour_diff(image, image, method="unsupported")
+
 
 if __name__ == "__main__":
     unittest.main()

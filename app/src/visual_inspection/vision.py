@@ -43,6 +43,7 @@ def build_contour_diff(
     *,
     threshold: int = 25,
     min_area: int = 3000,
+    method: str = "color",
 ) -> ContourResult:
     reference_rgb = _to_rgb_array(reference)
     live_rgb = _to_rgb_array(live)
@@ -56,8 +57,20 @@ def build_contour_diff(
 
     reference_bgr = cv2.cvtColor(reference_rgb, cv2.COLOR_RGB2BGR)
     live_bgr = cv2.cvtColor(live_rgb, cv2.COLOR_RGB2BGR)
-    difference = cv2.absdiff(reference_bgr, live_bgr)
-    difference_gray = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+    if method == "color":
+        difference = cv2.absdiff(reference_bgr, live_bgr)
+        difference_gray = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+    elif method == "channel-max":
+        difference = cv2.absdiff(reference_bgr, live_bgr)
+        difference_gray = np.max(difference, axis=2).astype(np.uint8)
+    elif method == "edges":
+        reference_gray = cv2.cvtColor(reference_bgr, cv2.COLOR_BGR2GRAY)
+        live_gray = cv2.cvtColor(live_bgr, cv2.COLOR_BGR2GRAY)
+        reference_edges = cv2.Canny(reference_gray, 50, 150)
+        live_edges = cv2.Canny(live_gray, 50, 150)
+        difference_gray = cv2.absdiff(reference_edges, live_edges)
+    else:
+        raise ValueError(f"Unsupported contour method: {method}")
     _, thresholded = cv2.threshold(
         difference_gray,
         threshold,

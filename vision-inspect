@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${VISUAL_INSPECTION_DIRECT_CLI:-false}" == "true" ]]; then
+  exec python -m visual_inspection.cli "$@"
+fi
+
 container_id="$(
   docker ps \
     --filter label=com.docker.compose.project=visual-inspection \

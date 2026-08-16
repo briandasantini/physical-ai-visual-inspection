@@ -15,41 +15,44 @@ from .config import ModelConfig
 from .vision import ContourResult
 
 
-BASELINE_SYSTEM_PROMPT = """You are a visual workspace inspector performing an expected-versus-observed setup discrepancy check.
+BASELINE_SYSTEM_PROMPT = """You are a visual workspace inspector performing a layout discrepancy check.
 
-You receive:
-- IMAGE 1 — EXPECTED: the correct workspace setup and source of truth
-- IMAGE 2 — OBSERVED: the current workspace state
+IMAGE 1 is the EXPECTED setup and source of truth. IMAGE 2 is the OBSERVED setup to verify.
 
-Compare IMAGE 1 and IMAGE 2 directly. Classify a confirmed physical change as REMOVED, ADDED, MOVED, REPLACED, TILTED, or FOREIGN OBJECT. Ignore lighting and shadow changes.
+Find directly visible physical differences. Check for a small unexpected tool, missing labware, changed orientation, changed position, or replacement. Never reverse expected and observed.
 
-Return FAIL if any real physical change is confirmed. Return PASS only when the observed workspace matches the expected workspace. If uncertain about a possible safety-relevant change, return FAIL with Low confidence.
+Use REMOVED for expected-only, FOREIGN OBJECT or ADDED for observed-only, TILTED for the same object's angle change, MOVED for its position change, and REPLACED for a different object in the same slot. Ignore exposure, shadow, reflection, compression, and whole-image alignment differences. Report each verified change once and report no more than three changes.
 
-Respond exactly in this format:
-RESULT: <PASS or FAIL>
-CONFIDENCE: <High, Medium, or Low>
+Return FAIL for any verified physical difference. Return PASS only when the layouts match. Never return UNKNOWN; choose PASS or FAIL with Low confidence if needed.
+
+Use these literal field names and no angle brackets. Begin every reported change with exactly one action label from the list above:
+RESULT: PASS or FAIL
+CONFIDENCE: High, Medium, or Low
 CHANGES:
-- <change type>: <object and location>, or None
-ISSUES: <one plain-English sentence, or None>"""
+- None
+or
+- REMOVED — visible object — relative position
+ISSUES: one short grounded sentence, or None"""
 
 
-CONTOUR_SYSTEM_PROMPT = """You are a visual workspace inspector performing an expected-versus-observed setup discrepancy check.
+CONTOUR_SYSTEM_PROMPT = """You are a visual workspace inspector performing a layout discrepancy check.
 
-You receive:
-- IMAGE 1 — EXPECTED: the correct workspace setup and source of truth
-- IMAGE 2 — OBSERVED: the current workspace state
-- IMAGE 3 — CONTOUR VIEW: IMAGE 2 with red boxes around candidate changes
+IMAGE 1 is the EXPECTED setup and source of truth. IMAGE 2 is the OBSERVED setup to verify. IMAGE 3 is IMAGE 2 with red boxes marking candidate pixel-difference regions.
 
-For every red box, compare the same location in IMAGE 1 and IMAGE 2. Classify a confirmed physical change as REMOVED, ADDED, MOVED, REPLACED, TILTED, or FOREIGN OBJECT. Red boxes are attention hints, not proof; ignore lighting and shadow changes. Then scan the rest of the workspace for changes the contour view missed.
+Find directly visible physical differences. Check every red box by comparing its exact local region in IMAGE 1 and IMAGE 2, then check for a small unexpected tool, missing labware, changed orientation, changed position, or replacement outside the boxes. A red box is an attention hint, not proof of a change. Never reverse expected and observed.
 
-Return FAIL if any real physical change is confirmed. Return PASS only when the observed workspace matches the expected workspace. If uncertain about a possible safety-relevant change, return FAIL with Low confidence.
+Use REMOVED for expected-only, FOREIGN OBJECT or ADDED for observed-only, TILTED for the same object's angle change, MOVED for its position change, and REPLACED for a different object in the same slot. Ignore the red annotation itself, exposure, shadow, reflection, compression, and whole-image alignment differences. Report each verified change once and report no more than three changes.
 
-Respond exactly in this format:
-RESULT: <PASS or FAIL>
-CONFIDENCE: <High, Medium, or Low>
+Return FAIL for any verified physical difference. Return PASS only when the layouts match. Never return UNKNOWN; choose PASS or FAIL with Low confidence if needed.
+
+Use these literal field names and no angle brackets. Begin every reported change with exactly one action label from the list above:
+RESULT: PASS or FAIL
+CONFIDENCE: High, Medium, or Low
 CHANGES:
-- <change type>: <object and location>, or None
-ISSUES: <one plain-English sentence, or None>"""
+- None
+or
+- REMOVED — visible object — relative position
+ISSUES: one short grounded sentence, or None"""
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,8 @@ class InspectionResult:
     model: str
     analysis_mode: str
     latency_seconds: float
+    preprocessing_seconds: float
+    total_seconds: float
     contour_regions: int
     changed_pixel_ratio: float
     raw_response: str
@@ -91,10 +96,17 @@ def parse_response(
     latency_seconds: float,
     contour: ContourResult | None,
     analysis_mode: str = "Contour-assisted",
+    preprocessing_seconds: float = 0.0,
 ) -> InspectionResult:
-    verdict = _extract(r"^RESULT:\s*(PASS|FAIL)\b", raw, "UNKNOWN").upper()
+    verdict = _extract(
+        r"^RESULT:\s*<?\s*(PASS|FAIL)\s*>?",
+        raw,
+        "UNKNOWN",
+    ).upper()
+    if verdict == "UNKNOWN":
+        verdict = _extract(r"^\s*(PASS|FAIL)\s*$", raw, "UNKNOWN").upper()
     confidence = _extract(
-        r"^CONFIDENCE:\s*(High|Medium|Low)\b",
+        r"^CONFIDENCE:\s*<?\s*(High|Medium|Low)\s*>?",
         raw,
         "Unknown",
     ).title()
@@ -112,6 +124,8 @@ def parse_response(
         model=model.label,
         analysis_mode=analysis_mode,
         latency_seconds=round(latency_seconds, 3),
+        preprocessing_seconds=round(preprocessing_seconds, 3),
+        total_seconds=round(latency_seconds + preprocessing_seconds, 3),
         contour_regions=len(contour.regions) if contour else 0,
         changed_pixel_ratio=round(contour.changed_pixel_ratio, 6) if contour else 0.0,
         raw_response=raw,
@@ -123,6 +137,8 @@ def inspect_workspace(
     live: Image.Image,
     contour: ContourResult | None,
     model: ModelConfig,
+    *,
+    preprocessing_seconds: float = 0.0,
 ) -> InspectionResult:
     client = OpenAI(
         base_url=model.base_url,
@@ -164,8 +180,8 @@ def inspect_workspace(
             },
             {"role": "user", "content": content},
         ],
-        max_tokens=768,
-        temperature=0.1,
+        max_tokens=384,
+        temperature=0.0,
     )
     latency_seconds = time.perf_counter() - started_at
     message = response.choices[0].message
@@ -176,6 +192,7 @@ def inspect_workspace(
         latency_seconds=latency_seconds,
         contour=contour,
         analysis_mode=analysis_mode,
+        preprocessing_seconds=preprocessing_seconds,
     )
 
 

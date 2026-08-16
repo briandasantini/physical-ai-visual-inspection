@@ -21,10 +21,50 @@ from .tutorial import (
 from .vision import build_contour_diff
 
 
+NVIDIA_THEME = gr.themes.Default(
+    primary_hue=gr.themes.colors.gray,
+    secondary_hue=gr.themes.colors.gray,
+    neutral_hue=gr.themes.colors.gray,
+).set(
+    color_accent="#76b900",
+    color_accent_soft="#f4f9e8",
+    color_accent_soft_dark="#354f0b",
+    border_color_accent="#76b900",
+    border_color_accent_dark="#76b900",
+    link_text_color="#4f7d00",
+    link_text_color_dark="#94ca36",
+    link_text_color_hover="#639d00",
+    link_text_color_hover_dark="#b1d967",
+    checkbox_background_color_selected="#76b900",
+    checkbox_background_color_selected_dark="#76b900",
+    checkbox_border_color_selected="#76b900",
+    checkbox_border_color_selected_dark="#76b900",
+    checkbox_label_background_fill_selected="#f4f9e8",
+    checkbox_label_background_fill_selected_dark="#354f0b",
+    checkbox_label_border_color_selected="#76b900",
+    checkbox_label_border_color_selected_dark="#76b900",
+    checkbox_label_text_color_selected="#3f6205",
+    checkbox_label_text_color_selected_dark="#e5f2cc",
+    button_primary_background_fill="#76b900",
+    button_primary_background_fill_dark="#76b900",
+    button_primary_background_fill_hover="#639d00",
+    button_primary_background_fill_hover_dark="#94ca36",
+    button_primary_border_color="#76b900",
+    button_primary_border_color_dark="#76b900",
+    button_primary_border_color_hover="#639d00",
+    button_primary_border_color_hover_dark="#94ca36",
+    button_primary_text_color="white",
+    button_primary_text_color_dark="#111111",
+    loader_color="#76b900",
+    loader_color_dark="#94ca36",
+    slider_color="#76b900",
+    slider_color_dark="#94ca36",
+)
+
+
 CSS = """
 .gradio-container { max-width: 1480px !important; }
 .hero { border-left: 6px solid #76b900; padding-left: 18px; }
-.safety-note { background: #fff6d8; border: 1px solid #e4bf4a; padding: 12px; border-radius: 8px; }
 .status-card { border: 1px solid #d8d8d8; padding: 10px 14px; border-radius: 8px; }
 .guide-card { border: 1px solid #d8d8d8; border-radius: 10px; padding: 10px 16px; min-height: 160px; }
 .guide-card h3 { color: #3b5f00; }
@@ -39,6 +79,11 @@ DOCS_URL = os.getenv(
     "VISUAL_INSPECTION_DOCS_URL",
     "https://briandasantini.github.io/physical-ai-visual-inspection/",
 ).strip()
+JUPYTER_URL = os.getenv("VISUAL_INSPECTION_JUPYTER_URL", "").strip()
+if not JUPYTER_URL and os.getenv("BREV_ENV_ID", "").strip():
+    JUPYTER_URL = (
+        f"https://jupyter-{os.environ['BREV_ENV_ID'].strip()}.apps.run.brev.nvidia.com/lab"
+    )
 TABLE_HEADERS = ["Pair ID", "Collection", "Category", "Expected", "Scene", "Error"]
 RESULT_HEADERS = [
     "Model",
@@ -89,7 +134,7 @@ def _status_markdown() -> str:
         if ready:
             lines.append(f"- 🟢 **{model.label}:** Ready")
         elif model.optional:
-            lines.append(f"- ⚪ **{model.label}:** Off — facilitator can activate it")
+            lines.append(f"- ⚪ **{model.label}:** Off — optional model")
         else:
             lines.append(f"- 🟡 **{model.label}:** Starting — `{detail[:100]}`")
     return "\n".join(lines)
@@ -401,8 +446,48 @@ def build_demo() -> gr.Blocks:
 ## One workshop, three passes
 
 The environment contains the app, pinned dataset **{DATA_PROFILE}/{DATA_VERSION}**, and
-the model services. Participants stay in this website; a facilitator only uses the
-terminal to activate optional Nano.
+the model services. The guided exercises run directly in this website.
+"""
+                )
+                gr.Markdown(
+                    """
+## NVIDIA Cosmos vision-language models
+
+**NVIDIA Cosmos** is a family of open models for physical AI. This evaluation explores two
+series: Cosmos Reason2 and Cosmos3.
+
+### Cosmos Reason2
+
+- **Sizes:** [2B](https://huggingface.co/nvidia/Cosmos-Reason2-2B),
+  [8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B), and
+  [32B](https://huggingface.co/nvidia/Cosmos-Reason2-32B)
+- **Base architecture:** Qwen3-VL 2B, 8B, and 32B respectively
+- **Type:** post-trained vision-language model
+- **Capabilities:** spatio-temporal reasoning, object detection with 2D/3D localization,
+  long-context video up to 256K tokens, and chain-of-thought reasoning
+- **Precision:** BF16 only; minimum 32 GB GPU memory
+- **Learn more:** [GitHub](https://github.com/nvidia-cosmos/cosmos-reason2) ·
+  [intro video](https://www.youtube.com/watch?v=kcrDwWgRoTo&t=193s)
+
+### Cosmos3
+
+- **Sizes:** [Nano](https://huggingface.co/nvidia/Cosmos3-Nano), with an 8B reasoner and
+  8B generator, and [Super](https://huggingface.co/nvidia/Cosmos3-Super), with a 32B
+  reasoner and 32B generator
+- **Architecture:** Mixture-of-Transformers with reasoner and generator towers sharing a
+  common representation
+- **Reasoner tower:** scene understanding, reasoning, and next-token prediction
+- **Generator tower:** video, audio, and action-sequence generation; not tested here
+- **Learn more:** [Cosmos3 overview](https://huggingface.co/blog/nvidia/cosmos-3-for-physical-ai) ·
+  [reasoner cookbook](https://github.com/NVIDIA/cosmos/tree/main/cookbooks/cosmos3/reasoner) ·
+  [Nano Reasoner NIM](https://catalog.ngc.nvidia.com/orgs/nim/nvidia/containers/cosmos3-reasoner)
+
+For simplicity, the hands-on exercises use the two smallest **Reason2** configurations,
+2B and 8B. **Cosmos3 Nano Reasoner** is available as an optional comparison. Reason2 32B
+and Cosmos3 Super are introduced here but are not started in the workshop environment.
+
+The experiment asks where the models reason well, where they miss meaningful changes, and
+whether pixel-level visual cues help focus their reasoning on relevant image regions.
 """
                 )
                 gr.Markdown(
@@ -447,7 +532,7 @@ and troubleshooting. Closing the editor does **not** stop the paid Brev instance
                 with gr.Accordion("Optional Cosmos3 Nano", open=False):
                     gr.Markdown(
                         "Nano is installed but stopped, so it uses no GPU. It shares GPU 0 "
-                        "with Reason2 2B; the facilitator can switch between them with "
+                        "with Reason2 2B. Switch between them with "
                         "`./scripts/select-model-set.sh nano` or "
                         "`./scripts/select-model-set.sh reason2`. Reason2 8B stays on GPU 1."
                     )
@@ -563,6 +648,39 @@ and troubleshooting. Closing the editor does **not** stop the paid Brev instance
                 download_baseline.click(export_result, inputs=baseline_state, outputs=download_baseline)
                 download_contour.click(export_result, inputs=contour_state, outputs=download_contour)
 
+                with gr.Accordion("Try the first examples with an agent", open=False):
+                    gr.Markdown(
+                        """
+Start `codex` or `claude` in the workshop repository, then paste:
+
+```text
+Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md. Guide me through
+phase 1 using the curated first examples. Check readiness and list the Round 1 pairs.
+Before each inference, ask me to predict PASS or FAIL and tell you what I expect to
+change. Show me the exact vision-inspect command before running it. Compare Reason2 2B
+and 8B on baseline inputs first, then rerun the same pair with contours. Explain correct
+details, misses, and unsupported claims, and save the JSON evidence under evidence/.
+```
+
+Useful starting commands: `./vision-inspect status` and
+`./vision-inspect pairs --collection round1`.
+
+In JupyterLab, open **Terminal** from the Launcher, then run:
+
+```bash
+cd /home/nvidia/physical-ai-visual-inspection
+claude  # or: codex
+```
+"""
+                    )
+                    if JUPYTER_URL:
+                        gr.Button(
+                            "Open Jupyter terminal ↗",
+                            link=JUPYTER_URL,
+                            link_target="_blank",
+                            size="sm",
+                        )
+
             with gr.Tab("2 · Larger Set"):
                 gr.Markdown(
                     """
@@ -642,6 +760,40 @@ the aggregate score alone is not the workshop finding.
                     inputs=batch_contour_state,
                     outputs=download_batch_contour,
                 )
+
+                with gr.Accordion("Try the larger set with an agent", open=False):
+                    gr.Markdown(
+                        """
+Start `codex` or `claude` in the workshop repository, then paste:
+
+```text
+Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md. Guide me through
+phase 2. Ask me to choose a category, sample size, and model. Run one matched sample in
+baseline and contour-assisted modes, preserving the same ordered pairs. Show me the exact
+vision-inspect command before running it. Summarize verdict accuracy, action grounding,
+item grounding, NIM latency, preprocessing latency, and total latency. Then show the raw
+misses and false alarms rather than hiding them behind the aggregate score. Save the JSON
+evidence under evidence/.
+```
+
+Useful starting pattern: `./vision-inspect batch --category Shift/Displace --count 10
+--model reason2-8b --mode both --output evidence/shift-10.json`.
+
+In JupyterLab, open **Terminal** from the Launcher, then run:
+
+```bash
+cd /home/nvidia/physical-ai-visual-inspection
+claude  # or: codex
+```
+"""
+                    )
+                    if JUPYTER_URL:
+                        gr.Button(
+                            "Open Jupyter terminal ↗",
+                            link=JUPYTER_URL,
+                            link_target="_blank",
+                            size="sm",
+                        )
 
             with gr.Tab("3 · Explore"):
                 gr.Markdown(
@@ -730,16 +882,6 @@ Prioritize small shifts because they were the weakest historical category.
                         outputs=[reference, live, selected_expected, selected_metadata],
                     )
 
-        gr.Markdown(
-            """<div class="safety-note">
-
-**Workshop system — not a production safety interlock.** A PASS result must not release
-an automated run without independently validated controls. Explanations can sound persuasive
-while being wrong; judge them against the labeled image pair.
-
-</div>"""
-        )
-
     return demo
 
 
@@ -748,5 +890,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
+        theme=NVIDIA_THEME,
         css=CSS,
     )

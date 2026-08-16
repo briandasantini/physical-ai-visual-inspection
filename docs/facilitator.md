@@ -7,7 +7,7 @@
 3. Confirm the Cosmos NIM terms have been accepted for the workshop organization.
 4. Provision a fine-grained Contents: Read-only token for the private data repository.
 5. Deploy a new two-GPU instance from the final Launchable.
-6. Wait for both default NIMs and the website to become ready.
+6. Wait for both default NIMs and the website to become ready, then open JupyterLab and its Terminal.
 7. Run one `PASS` pair and one `FAIL` pair with both 2B and 8B.
 8. Verify that the dataset is read-only and no key appears in logs.
 9. Stop the rehearsal instance after validation.
@@ -16,10 +16,10 @@
 
 | Segment | Time |
 |---|---:|
-| Context, safety boundary, and experiment question | 10 min |
+| Cosmos context and experiment question | 10 min |
 | Curated first examples | 25 min |
 | Larger labeled sample | 35 min |
-| Matched contour-assisted rerun | 30 min |
+| Agent-led visual-cue experiment | 30 min |
 | Findings and post-training data plan | 20 min |
 
 ## Facilitation prompts
@@ -28,6 +28,7 @@
 - Is the verdict correct for the right reason?
 - Which statement in the explanation is directly supported by pixels?
 - Did the contour input help the model or merely change its confidence?
+- Was the gain worth the preprocessing and total latency?
 - What negative examples would prevent this false alarm?
 - What held-out test would prove that post-training helped?
 

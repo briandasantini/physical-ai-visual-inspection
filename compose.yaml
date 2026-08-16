@@ -82,6 +82,7 @@ services:
     build:
       context: ./app
     environment:
+      BREV_ENV_ID: ${BREV_ENV_ID:-}
       NIM_2B_BASE_URL: http://nim-reason2-2b:8000/v1
       NIM_8B_BASE_URL: http://nim-reason2-8b:8000/v1
       NIM_NANO_BASE_URL: http://nim-cosmos3-nano:8000/v1
@@ -90,6 +91,7 @@ services:
       VISUAL_INSPECTION_DATA_VERSION: ${VISUAL_INSPECTION_DATA_VERSION:-2026.08.15}
       VISUAL_INSPECTION_DEFAULT_MODEL: reason2-8b
       VISUAL_INSPECTION_DOCS_URL: ${VISUAL_INSPECTION_DOCS_URL:-https://briandasantini.github.io/physical-ai-visual-inspection/}
+      VISUAL_INSPECTION_JUPYTER_URL: ${VISUAL_INSPECTION_JUPYTER_URL:-}
     volumes:
       - ${VISUAL_INSPECTION_DATA_DIR:-./data}:/data:ro
     ports:

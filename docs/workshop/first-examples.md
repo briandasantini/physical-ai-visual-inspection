@@ -31,6 +31,7 @@ reviewed.
 | Grounded observation | Did it name a visible, relevant difference? |
 | Unsupported claim | Did it invent an object, location, or change? |
 | Model comparison | Did 2B and 8B fail in the same way? |
+| Latency | How much time came from NIM inference, cue preprocessing, and total execution? |
 
 !!! tip
     Preserve the raw response. Short summaries can hide uncertainty or hallucinated

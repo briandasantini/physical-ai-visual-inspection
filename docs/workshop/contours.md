@@ -20,6 +20,7 @@ Rerun the **exact same pairs, model, and sample selection** used during baseline
 - Did contours introduce a false alarm?
 - Did the model merely mention the overlay rather than reason about the workspace?
 - Which category remains difficult after visual guidance?
+- What preprocessing and total latency did the contour input add?
 
 ## Interpret carefully
 
@@ -29,7 +30,8 @@ one pair does not establish a general solution. A useful conclusion distinguishe
 - verdict improvement;
 - explanation improvement;
 - regressions caused by added visual cues;
-- unchanged failures that may require better data or post-training.
+- unchanged failures that may require better data or post-training;
+- latency cost relative to any verdict or grounding gain.
 
 Finish with a matched statement:
 

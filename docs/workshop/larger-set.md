@@ -22,6 +22,10 @@ The workshop treats `FAIL` as the positive class.
 - **Precision:** how often a predicted difference is real.
 - **Recall:** how many labeled differences the model detects.
 - **F1:** balance between precision and recall.
+- **Action %:** among correctly predicted `FAIL` cases with action labels, how often the
+  response names the expected change type.
+- **Item %:** among those eligible cases, how often the response names the expected item.
+- **Latency:** NIM inference, contour preprocessing, total, and p95 total response time.
 
 Metrics are only the start. Review every incorrect row and classify the failure:
 
@@ -30,6 +34,9 @@ Metrics are only the start. Review every incorrect row and classify the failure:
 - correct verdict with incorrect explanation;
 - ambiguous or unsupported reasoning;
 - category-specific weakness such as subtle displacement.
+
+Open the representative raw outputs under each run. They include a correct result, a miss
+when available, and another contrasting case so the aggregate metrics remain interpretable.
 
 ## Required output
 

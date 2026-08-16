@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -10,7 +12,7 @@ from PIL import Image
 
 from .config import MODELS
 from .datasets import InspectionPair, build_index
-from .evaluation import calculate_metrics
+from .evaluation import calculate_metrics, score_semantics
 from .nim_client import health_status, inspect_workspace
 from .vision import build_contour_diff
 
@@ -72,6 +74,23 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--count", type=positive_int, default=10)
     add_inference_arguments(batch, multiple_models=False, default_mode="baseline")
 
+    sweep = subparsers.add_parser(
+        "sweep",
+        help="Compare contour methods and parameters for one labeled pair.",
+    )
+    sweep.add_argument("--pair", required=True, help="Pair ID from `vision-inspect pairs`.")
+    sweep.add_argument("--model", choices=sorted(MODELS), default="reason2-8b")
+    sweep.add_argument("--thresholds", nargs="+", type=positive_int, default=[15, 25, 35])
+    sweep.add_argument("--min-areas", nargs="+", type=positive_int, default=[1500, 3000])
+    sweep.add_argument(
+        "--diff-methods",
+        nargs="+",
+        choices=("color", "channel-max", "edges"),
+        default=["color", "channel-max", "edges"],
+    )
+    sweep.add_argument("--output", type=Path, help="Write complete JSON evidence.")
+    sweep.add_argument("--raw", action="store_true", help="Print raw model responses.")
+
     return parser
 
 
@@ -103,6 +122,13 @@ def add_inference_arguments(
         )
     parser.add_argument("--mode", choices=MODES, default=default_mode)
     parser.add_argument("--output", type=Path, help="Write complete JSON evidence.")
+    parser.add_argument("--threshold", type=positive_int, default=25)
+    parser.add_argument("--min-area", type=positive_int, default=3000)
+    parser.add_argument(
+        "--diff-method",
+        choices=("color", "channel-max", "edges"),
+        default="color",
+    )
     parser.add_argument(
         "--raw",
         action="store_true",
@@ -156,10 +182,25 @@ def run_pair(
     pair: InspectionPair,
     model_keys: list[str],
     mode_key: str,
+    *,
+    threshold: int = 25,
+    min_area: int = 3000,
+    diff_method: str = "color",
 ) -> dict:
     require_models(model_keys)
     reference, live = load_images(pair)
-    contour = build_contour_diff(reference, live)
+    contour = None
+    contour_seconds = 0.0
+    if "Contour-assisted" in MODES[mode_key]:
+        contour_started = time.perf_counter()
+        contour = build_contour_diff(
+            reference,
+            live,
+            threshold=threshold,
+            min_area=min_area,
+            method=diff_method,
+        )
+        contour_seconds = time.perf_counter() - contour_started
     runs = []
     for mode in MODES[mode_key]:
         selected_contour = contour if mode == "Contour-assisted" else None
@@ -171,16 +212,30 @@ def run_pair(
                         live,
                         selected_contour,
                         MODELS[key],
+                        preprocessing_seconds=(
+                            contour_seconds if selected_contour is not None else 0.0
+                        ),
                     ),
                     model_keys,
                 )
             )
-        runs.extend(result.to_dict() for result in results)
+        for result in results:
+            result_record = result.to_dict()
+            result_record.update(
+                score_semantics({**pair.to_dict(), **result_record})
+            )
+            runs.append(result_record)
     return {
         "pair": pair.to_dict(),
         "contour": {
-            "regions": len(contour.regions),
-            "changed_pixel_ratio": round(contour.changed_pixel_ratio, 6),
+            "method": diff_method,
+            "threshold": threshold,
+            "min_area": min_area,
+            "preprocessing_seconds": round(contour_seconds, 3),
+            "regions": len(contour.regions) if contour else 0,
+            "changed_pixel_ratio": (
+                round(contour.changed_pixel_ratio, 6) if contour else 0.0
+            ),
         },
         "results": runs,
     }
@@ -198,14 +253,26 @@ def print_pair_evidence(evidence: dict, *, raw: bool) -> None:
         print(
             f"{result['model']} | {result['analysis_mode']} | "
             f"{result['verdict']} {result['confidence']} | correct {correct} | "
-            f"{result['latency_seconds']:.3f}s"
+            f"NIM {result['latency_seconds']:.3f}s | "
+            f"preprocess {result['preprocessing_seconds']:.3f}s | "
+            f"total {result['total_seconds']:.3f}s"
         )
         print(f"  Changes: {result['changes']}")
         print(f"  Issues:  {result['issues']}")
+        print(
+            f"  Ground:  action {_score_label(result.get('action_correct'))} | "
+            f"item {_score_label(result.get('item_correct'))}"
+        )
         if raw:
             print("  Raw:")
             for line in result["raw_response"].splitlines():
                 print(f"    {line}")
+
+
+def _score_label(value: bool | None) -> str:
+    if value is None:
+        return "—"
+    return "YES" if value else "NO"
 
 
 def write_evidence(path: Path | None, payload: dict) -> None:
@@ -268,7 +335,14 @@ def command_inspect(args: argparse.Namespace) -> int:
         )
     if args.expected:
         pair = InspectionPair(**{**pair.to_dict(), "expected": args.expected})
-    evidence = run_pair(pair, args.models, args.mode)
+    evidence = run_pair(
+        pair,
+        args.models,
+        args.mode,
+        threshold=args.threshold,
+        min_area=args.min_area,
+        diff_method=args.diff_method,
+    )
     print_pair_evidence(evidence, raw=args.raw)
     write_evidence(args.output, evidence)
     return 0
@@ -282,10 +356,45 @@ def command_round_one(args: argparse.Namespace) -> int:
     )
     if len(pairs) < min(args.limit, 5):
         raise SystemExit("The Round 1 collection is missing or incomplete.")
-    evidence = [run_pair(pair, args.models, args.mode) for pair in pairs]
+    evidence = [
+        run_pair(
+            pair,
+            args.models,
+            args.mode,
+            threshold=args.threshold,
+            min_area=args.min_area,
+            diff_method=args.diff_method,
+        )
+        for pair in pairs
+    ]
     for item in evidence:
         print_pair_evidence(item, raw=args.raw)
-    payload = {"exercise": "Round 1", "runs": evidence}
+    records = [
+        {**run["pair"], **result}
+        for run in evidence
+        for result in run["results"]
+    ]
+    metrics = {}
+    for model_key in args.models:
+        model_label = MODELS[model_key].label
+        for mode in MODES[args.mode]:
+            matched = [
+                record
+                for record in records
+                if record["model"] == model_label and record["analysis_mode"] == mode
+            ]
+            metrics[f"{model_key}:{mode}"] = calculate_metrics(matched)
+    print("\nRound 1 summary")
+    print("-" * 112)
+    for label, result_metrics in metrics.items():
+        print(
+            f"{label:32} accuracy {result_metrics['accuracy']:.0%} | "
+            f"action {result_metrics['action_accuracy']:.0%} | "
+            f"item {result_metrics['item_accuracy']:.0%} | "
+            f"NIM {result_metrics['avg_nim_seconds']:.2f}s | "
+            f"total {result_metrics['avg_total_seconds']:.2f}s"
+        )
+    payload = {"exercise": "Round 1", "metrics": metrics, "runs": evidence}
     write_evidence(args.output, payload)
     return 0
 
@@ -299,7 +408,17 @@ def command_batch(args: argparse.Namespace) -> int:
     )
     if not pairs:
         raise SystemExit("No larger-set pairs matched the requested category.")
-    runs = [run_pair(pair, [args.model], args.mode) for pair in pairs]
+    runs = [
+        run_pair(
+            pair,
+            [args.model],
+            args.mode,
+            threshold=args.threshold,
+            min_area=args.min_area,
+            diff_method=args.diff_method,
+        )
+        for pair in pairs
+    ]
     records = [
         {
             **run["pair"],
@@ -320,7 +439,9 @@ def command_batch(args: argparse.Namespace) -> int:
         print(
             f"{mode:18} pairs {metrics['pairs']:3} | accuracy {metrics['accuracy']:.0%} "
             f"| precision {metrics['precision']:.0%} | recall {metrics['recall']:.0%} "
-            f"| F1 {metrics['f1']:.0%}"
+            f"| F1 {metrics['f1']:.0%} | action {metrics['action_accuracy']:.0%} "
+            f"| item {metrics['item_accuracy']:.0%} | "
+            f"NIM {metrics['avg_nim_seconds']:.2f}s | total {metrics['avg_total_seconds']:.2f}s"
         )
     payload = {
         "exercise": "Larger set",
@@ -328,6 +449,79 @@ def command_batch(args: argparse.Namespace) -> int:
         "model": args.model,
         "metrics": metrics_by_mode,
         "runs": runs,
+    }
+    write_evidence(args.output, payload)
+    return 0
+
+
+def command_sweep(args: argparse.Namespace) -> int:
+    pair = find_pair(args.data_root, args.pair)
+    require_models([args.model])
+    model = MODELS[args.model]
+    reference, live = load_images(pair)
+
+    baseline = inspect_workspace(reference, live, None, model).to_dict()
+    baseline.update(score_semantics({**pair.to_dict(), **baseline}))
+    trials = []
+    combinations = itertools.product(args.diff_methods, args.thresholds, args.min_areas)
+    for diff_method, threshold, min_area in combinations:
+        started_at = time.perf_counter()
+        contour = build_contour_diff(
+            reference,
+            live,
+            threshold=threshold,
+            min_area=min_area,
+            method=diff_method,
+        )
+        preprocessing_seconds = time.perf_counter() - started_at
+        result = inspect_workspace(
+            reference,
+            live,
+            contour,
+            model,
+            preprocessing_seconds=preprocessing_seconds,
+        ).to_dict()
+        result.update(score_semantics({**pair.to_dict(), **result}))
+        trials.append(
+            {
+                "diff_method": diff_method,
+                "threshold": threshold,
+                "min_area": min_area,
+                "regions": len(contour.regions),
+                "changed_pixel_ratio": round(contour.changed_pixel_ratio, 6),
+                **result,
+            }
+        )
+
+    print(
+        f"\nContour sweep | {pair.pair_id} | expected {pair.expected} | {model.label}\n"
+        + "-" * 116
+    )
+    print(
+        f"{'baseline':12} {'—':9} {'—':8} {'—':8} {baseline['verdict']:7} "
+        f"{str(baseline['verdict'] == pair.expected):7} "
+        f"A {_score_label(baseline['action_correct']):3} "
+        f"I {_score_label(baseline['item_correct']):3} "
+        f"NIM {baseline['latency_seconds']:7.2f}s total {baseline['total_seconds']:7.2f}s"
+    )
+    for trial in trials:
+        print(
+            f"{trial['diff_method']:12} {trial['threshold']:9} {trial['min_area']:8} "
+            f"{trial['regions']:8} {trial['verdict']:7} "
+            f"{str(trial['verdict'] == pair.expected):7} "
+            f"A {_score_label(trial['action_correct']):3} "
+            f"I {_score_label(trial['item_correct']):3} "
+            f"NIM {trial['latency_seconds']:7.2f}s total {trial['total_seconds']:7.2f}s"
+        )
+        if args.raw:
+            print(trial["raw_response"])
+
+    payload = {
+        "exercise": "Contour parameter sweep",
+        "pair": pair.to_dict(),
+        "model": model.label,
+        "baseline": baseline,
+        "trials": trials,
     }
     write_evidence(args.output, payload)
     return 0
@@ -346,6 +540,8 @@ def main(argv: list[str] | None = None) -> int:
         return command_round_one(args)
     if args.command == "batch":
         return command_batch(args)
+    if args.command == "sweep":
+        return command_sweep(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 

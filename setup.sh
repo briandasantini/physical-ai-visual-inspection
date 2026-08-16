@@ -53,6 +53,7 @@ configure_data() {
 }
 
 configure_data
+mkdir -p "$ROOT_DIR/evidence"
 
 if [[ "${VISUAL_INSPECTION_INSTALL_AGENT_CLIS:-true}" == "true" ]]; then
   "$ROOT_DIR/scripts/install-agent-clis.sh"
@@ -76,4 +77,4 @@ docker compose -f "$COMPOSE_FILE" up --detach --build
 
 "$ROOT_DIR/scripts/wait-for-ready.sh"
 
-echo "Visual inspection is ready. Run 'codex' or 'claude' from $ROOT_DIR to use an agent."
+echo "Visual inspection is ready. Open the website; its Jupyter links open a terminal for Codex or Claude."
