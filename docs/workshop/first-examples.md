@@ -27,7 +27,7 @@ object, and subtle displacement.
 | Coverage | What new object, action, nuisance condition, or counterexample does this suggest? |
 
 !!! tip
-    Preserve the original response. A normalized summary can hide uncertainty,
+    Review the whole original response. A normalized summary can hide uncertainty,
     contradiction, or hallucinated details that matter more than the verdict.
 
 Finish by naming one observed strength, one failure pattern, and one case you wish the
