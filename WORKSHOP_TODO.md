@@ -66,7 +66,7 @@ walkthrough.
   models, baseline and contour runs, comparisons and exports; a ten-pair larger-set run;
   progress tracking; dataset search; and exploration-mode inference and export.
 - [ ] Complete the website tutorial manually as a first-time participant and record
-  confusing wording, navigation, and facilitation moments.
+  confusing wording, navigation, and guided moments.
 - [x] Complete the supported CLI tutorial from the Brev shell and save rehearsal evidence.
 - [ ] Repeat the CLI tutorial from a Jupyter terminal during the human walkthrough.
 - [ ] Rehearse the new integrated agent terminal, including first-time Codex and Claude

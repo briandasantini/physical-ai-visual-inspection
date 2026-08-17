@@ -21,7 +21,7 @@ brev org set <workshop-org>
 brev ls
 ```
 
-Use the `<workshop-org>` name supplied by the facilitator.
+Use the `<workshop-org>` name provided for the workshop.
 
 ## Open the remote repository
 

@@ -61,7 +61,7 @@ $HOME/.secrets/visual-inspection-ngc-key
 
 ## Optional Nano switch
 
-Switch only after explicit user or facilitator approval:
+Switch only after explicit user approval:
 
 ```bash
 export NGC_API_KEY="$(cat "$HOME/.secrets/visual-inspection-ngc-key")"

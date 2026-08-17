@@ -32,5 +32,5 @@ Jupyter URL from `BREV_ENV_ID` or an explicit `VISUAL_INSPECTION_JUPYTER_URL`.
 - Reason2 2B and 8B start by default.
 - The Nano image is pulled but remains stopped.
 - Model caches and downloaded data persist across stop/start cycles of the same VM.
-- Codex and Claude run in the Jupyter terminal and authenticate with the operator's own
-  provider account.
+- Codex and Claude run in the Jupyter terminal and authenticate with your provider
+  account.

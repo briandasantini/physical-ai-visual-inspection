@@ -23,7 +23,6 @@ theme:
 nav:
   - Start Here: index.md
   - Launch the Environment: launch.md
-  - Cosmos Models: models.md
   - Workshop:
       - Workshop Map: workshop/index.md
       - 1. First Examples: workshop/first-examples.md

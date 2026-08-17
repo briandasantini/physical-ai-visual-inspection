@@ -12,8 +12,8 @@ patterns recur—and whether entirely new failure modes appear.
 5. Select rows in either table to view the images side by side, original response,
    normalized scoring response, semantics, latency, and configured prompt bundle.
 
-Keep an interactive batch to roughly ten pairs unless the facilitator approves a larger
-run. Every pair invokes a NIM.
+Keep an interactive batch to roughly ten pairs unless the group chooses a larger run.
+Every pair invokes a NIM.
 
 ## Turn metrics into application questions
 

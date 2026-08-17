@@ -71,7 +71,7 @@ tunnels as the intended access path for Gradio and similar participant applicati
 | `VISUAL_INSPECTION_INSTALL_AGENT_SKILL` | Choice | No | `true` | Links the workshop skill for supported agents. |
 | `VISUAL_INSPECTION_CLAUDE_CHANNEL` | Choice | No | `stable` | Uses Anthropic's stable native release channel. |
 | `VISUAL_INSPECTION_DATA_PROFILE` | Choice | No | `workshop` | Selects the curated or restricted full bundle. |
-| `VISUAL_INSPECTION_DATA_SOURCE` | Choice | No | `github` | Uses the private GitHub Release for attendees. Use `sharepoint` only in a restricted facilitator deployment. |
+| `VISUAL_INSPECTION_DATA_SOURCE` | Choice | No | `github` | Uses the private GitHub Release for attendees. Use `sharepoint` only in a restricted deployment. |
 | `VISUAL_INSPECTION_DATA_GITHUB_REPOSITORY` | Text | No | `briandasantini/physical-ai-visual-inspection-data` | Private repository containing the release asset. |
 | `VISUAL_INSPECTION_DATA_GITHUB_RELEASE` | Text | No | `workshop-2026.08.15` | Immutable release tag for the workshop bundle. |
 | `VISUAL_INSPECTION_DATA_SHA256` | Text | Yes | `c6f6b99f4cf239c6238cad510a90981f3b1ced11c7471280de4d3a7d387bcd19` | Pinned SHA-256 for the default workshop bundle. Replace it when selecting `full`. |
@@ -107,5 +107,5 @@ configure them in the attendee Launchable.
 Codex and Claude Code run directly in the Brev terminal and each prompts for provider
 authentication on first use. Their credentials belong to the VM's Linux user and are
 not launch parameters. Cursor and VS Code remain optional remote-SSH clients. Use one
-VM or Linux account per operator if participants must keep their agent logins separate.
+VM or Linux account per participant if agent logins must remain separate.
 Share `REMOTE_EDITORS.md` with participants who choose the remote-editor path.

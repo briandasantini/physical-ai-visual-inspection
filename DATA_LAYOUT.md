@@ -72,7 +72,7 @@ $HOME/workspace/visual-inspection-data/
 On first launch, `scripts/fetch-data.py` downloads the selected private GitHub Release
 asset, verifies the bundle SHA-256, rejects unsafe archive entries, verifies every
 internal file, and atomically switches `current`. Later starts of the same instance
-reuse the verified cache. Restricted facilitator deployments can select another backend.
+reuse the verified cache. Restricted deployments can select another backend.
 
 ## Rules
 

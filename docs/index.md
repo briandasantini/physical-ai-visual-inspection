@@ -1,75 +1,82 @@
 # Physical AI Visual Inspection Workshop
 
-Explore how vision-language models reason about physical differences between an
-**expected workspace** and an **observed workspace**—and define what useful visual
-inspection would mean for your application.
+Test how NVIDIA Cosmos can check a lab automation deck before an experiment starts by
+comparing its expected and observed state and detecting removed, added, moved, replaced,
+or reconfigured equipment.
 
-This is not a PASS/FAIL certification or a model leaderboard. The models will be right,
-wrong, uncertain, and occasionally convincing for the wrong reason. Those behaviors are
-the material for the workshop.
+## Objective
 
-<div class="grid cards" markdown>
+The objective is to discover where vision-language models are useful for deck inspection,
+where they miss meaningful changes, and where they produce a correct verdict for the wrong
+reason. We will also test whether pixel-level contour cues focus the models or distort their
+understanding of the action and object.
 
--   **1 · Observe**
+This is an exploration rather than a production certification or model leaderboard. Dataset
+labels are reference annotations, and people, hands, PPE, annotations, and anything outside
+the deck are not valid inspection evidence.
 
-    Find where 2B and 8B see the real change, miss it, or hallucinate one.
+## NVIDIA Cosmos vision-language models
 
--   **2 · Compare**
+NVIDIA Cosmos is a family of open models for physical AI. This workshop explores two
+series: Cosmos Reason2 and Cosmos3.
 
-    Separate verdict quality from action, object, location, and contour effects.
+### Cosmos Reason2
 
--   **3 · Define**
+- **Sizes:** [2B](https://huggingface.co/nvidia/Cosmos-Reason2-2B),
+  [8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B), and
+  [32B](https://huggingface.co/nvidia/Cosmos-Reason2-32B)
+- **Base architecture:** Qwen3-VL 2B, 8B, and 32B respectively
+- **Type:** post-trained vision-language model
+- **Capabilities:** spatio-temporal reasoning, object detection with 2D/3D localization,
+  long-context video up to 256K tokens, and chain-of-thought reasoning
+- **Precision:** BF16 only; minimum 32 GB GPU memory
+- **Learn more:** [GitHub](https://github.com/nvidia-cosmos/cosmos-reason2) ·
+  [intro video](https://www.youtube.com/watch?v=kcrDwWgRoTo&t=193s)
 
-    Discuss tolerances, false alarms versus missed changes, and the ideal use case.
+### Cosmos3
 
--   **4 · Discover gaps**
+- **Sizes:** [Nano](https://huggingface.co/nvidia/Cosmos3-Nano), with an 8B reasoner and
+  8B generator, and [Super](https://huggingface.co/nvidia/Cosmos3-Super), with a 32B
+  reasoner and 32B generator
+- **Architecture:** Mixture-of-Transformers with reasoner and generator towers sharing a
+  common representation
+- **Reasoner tower:** scene understanding, reasoning, and next-token prediction
+- **Generator tower:** video, audio, and action-sequence generation; not tested here
+- **Learn more:** [Cosmos3 overview](https://huggingface.co/blog/nvidia/cosmos-3-for-physical-ai) ·
+  [reasoner cookbook](https://github.com/NVIDIA/cosmos/tree/main/cookbooks/cosmos3/reasoner) ·
+  [Nano Reasoner NIM](https://catalog.ngc.nvidia.com/orgs/nim/nvidia/containers/cosmos3-reasoner)
 
-    Identify missing cases and the data needed before fine-tuning.
+For simplicity, the hands-on exercises use the two smallest Reason2 configurations, 2B
+and 8B. Cosmos3 Nano Reasoner is available as an optional comparison. Reason2 32B and
+Cosmos3 Super are introduced here but are not started in the workshop environment.
 
-</div>
+## What we are exploring
 
-## The working loop
+The workshop asks where the models reason well, where they miss meaningful changes, and
+where they hallucinate unsupported ones. It also asks whether pixel-level contour cues
+improve detection or alter action and object quality, which false-positive/false-negative
+trade-off the intended workflow needs, what physical tolerance is acceptable, which cases
+are missing, and what data would be necessary before fine-tuning.
 
-1. Choose a question about the model or intended inspection workflow.
-2. Inspect a few labeled cases and read the original model responses.
-3. Separate verdict, action, object, location, uncertainty, and unsupported claims.
-4. Compare the same cases across models or with and without contour cues.
-5. Look for a pattern and a case that contradicts it.
-6. Turn the finding into a requirement, missing-case list, or next experiment.
+## What we will do
 
-Dataset labels are reference annotations. You do not need to predict or retype them. If a
-label or image seems ambiguous, that is a data-quality finding worth discussing.
+### 1 · Test the first five examples
 
-## Questions to carry through the workshop
+Start with five curated image pairs covering a matching setup and several kinds of deck
+change. Compare Cosmos Reason2 2B and 8B, read their original responses, and separate the
+PASS/FAIL verdict from the reported action, object, location, and hallucinations. Then add
+contour cues to the same examples and see what improves or regresses.
 
-- Where is each model useful, and where does it hallucinate or miss changes?
-- Do contours improve detection while degrading action or object understanding?
-- Which false positives or false negatives are more costly for the real workflow?
-- What amount of displacement, angle, occupancy, or object variation should be tolerated?
-- Are important objects, actions, nuisance conditions, or edge cases missing?
-- What would an ideal inspection case look like?
-- What positive, negative, nuisance, and held-out data would be necessary for fine-tuning?
+### 2 · Test a larger set
 
-## Choose your path
+Move beyond the five examples to a selected category and a larger labeled sample. Compare
+accuracy, precision, recall, action and object quality, latency, and individual failures.
+Use the results to discuss whether false alarms or missed changes matter more and whether
+the dataset is missing important objects, actions, tolerances, or nuisance conditions.
 
-=== "Browser workshop"
+### 3 · Explore with Codex or Claude
 
-    Use the Brev **Open Visual Inspection** secure link for the guided controls.
+Use the Jupyter terminal to investigate one open question about prompts, contours, model
+behavior, acceptable physical tolerances, missing cases, or data needed before fine-tuning.
 
-=== "Terminal"
-
-    Run `./vision-inspect status`, then use the [CLI guide](cli.md) as a question-driven
-    toolbox.
-
-=== "Codex/Claude"
-
-    In **3 · Explore**, open the Jupyter terminal and ask an agent to investigate one
-    question about reasoning, contours, tolerances, missing cases, or data.
-
-[Launch and connect](launch.md){ .launch-button }
-
-## A useful outcome
-
-The workshop should leave the team with a clearer operating hypothesis—not a polished
-score: observed strengths and failure modes, the important error trade-off, a physical
-tolerance to investigate, missing cases, and an evidence-backed next step.
+[Continue to the Workshop Map](workshop/index.md){ .launch-button }

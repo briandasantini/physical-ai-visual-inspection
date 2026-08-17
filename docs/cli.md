@@ -57,8 +57,8 @@ untouched held-out test. Do not alter dataset labels to match a model.
 
 ## Optional Nano
 
-Nano shares GPU 0 with Reason2 2B and is off by default. Only the facilitator should
-switch the model set:
+Nano shares GPU 0 with Reason2 2B and is off by default. Switch the model set only when
+the optional comparison is explicitly requested:
 
 ```bash
 ./scripts/select-model-set.sh nano

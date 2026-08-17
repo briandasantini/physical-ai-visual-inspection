@@ -70,7 +70,7 @@ instructions for Codex, Claude Code, and GitHub Copilot. Setup installs Codex an
 on the Brev host and links the workshop skill into each agent directory. Existing working
 CLI installations are preserved. Agents learn to:
 
-- facilitate collaborative discovery rather than ask participants to guess labels;
+- support collaborative discovery rather than ask participants to guess labels;
 - find model strengths, misses, hallucinations, and semantic errors;
 - use the supported CLI and preserve JSON evidence;
 - compare verdict, action, object, location, cues, and latency on matched cases;
@@ -78,7 +78,7 @@ CLI installations are preserved. Agents learn to:
 - ask about physical tolerances, ideal cases, missing coverage, and fine-tuning data;
 - run controlled cue-method, threshold, and region-area sweeps when useful;
 - protect customer data and the NGC credential;
-- keep Nano off unless a facilitator explicitly selects it.
+- keep Nano off unless it is explicitly selected.
 
 Reinstall or refresh the links manually with:
 
@@ -102,11 +102,11 @@ The first run asks the participant to authenticate with their own provider accou
 Setup never stores or shares agent credentials. Cursor and VS Code are optional: a
 participant can instead connect either editor to Brev over SSH and work in the same
 repository. Because authentication persists in the environment's terminal home, use one
-agent operator per shared environment and remove the environment when the workshop is complete.
+authenticated agent account per shared environment and remove the environment when the workshop is complete.
 
 For copy-paste setup commands and troubleshooting, see `REMOTE_EDITORS.md`.
 
-The facilitator can activate Nano for an optional comparison. Nano and Reason2 2B share
+Nano can be activated for an optional comparison. Nano and Reason2 2B share
 GPU 0 and never run together; Reason2 8B remains on GPU 1:
 
 ```bash

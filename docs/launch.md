@@ -6,11 +6,11 @@ and exposes the participant website through a Brev Secure Link.
 
 ## Participant launch
 
-1. Open the workshop Launchable URL supplied by the facilitator.
+1. Open the Launchable URL provided for the workshop.
 2. Sign in to Brev.
 3. Choose the recommended two-GPU configuration.
 4. Enter the workshop-scoped `NGC_API_KEY` when prompted.
-5. Enter the fine-grained private-data GitHub token supplied by the facilitator.
+5. Enter the fine-grained private-data GitHub token provided for the workshop.
 6. Select **Deploy**.
 7. Wait for setup to finish and open **Open Visual Inspection**.
 8. Use an **Open Jupyter terminal** button when the agent-guided experiment begins.
@@ -25,7 +25,6 @@ The website displays model status at the top. Begin when:
 
 - **Cosmos Reason2 8B** is green;
 - the curated and larger-set examples load;
-- optional Cosmos3 Nano is off unless the facilitator selected it.
 - JupyterLab opens in a new tab and `./vision-inspect status` runs from its Terminal.
 
 Terminal users can run:
@@ -47,7 +46,7 @@ brev ls
 brev refresh
 ```
 
-Use the `<workshop-org>` name supplied by the facilitator. Then run one of these commands:
+Use the `<workshop-org>` name provided for the workshop. Then run one of these commands:
 
 ```bash
 brev open <instance-name> code \
@@ -65,6 +64,6 @@ workshop is complete.
 - The NGC key is used only for the licensed NIMs.
 - The GitHub token must have Contents: Read-only access to the private data repository.
 - Treat both values as secrets and never use a broad personal token.
-- Codex and Claude authenticate separately with the operator's provider account.
-- Use one authenticated agent operator per shared environment.
+- Codex and Claude authenticate separately with your provider account.
+- Use one authenticated agent account per shared environment.
 - Never paste credentials into prompts, evidence files, Git, or screenshots.

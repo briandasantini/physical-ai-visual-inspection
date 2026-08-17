@@ -27,7 +27,7 @@ The intended machine is a Brev VM with two H100-class GPUs. The tested NIM tag i
 `1.7.0`.
 
 `setup.sh` also guarantees that Codex and Claude Code are callable inside the VM. It
-does not authenticate either agent. Each operator signs in on first use; Cursor and VS
+does not authenticate either agent. Each participant signs in on first use; Cursor and VS
 Code remain optional remote-SSH clients rather than launchable dependencies.
 
 ## Repository map
@@ -38,7 +38,7 @@ Code remain optional remote-SSH clients rather than launchable dependencies.
 - `app/src/visual_inspection/cli.py`: equivalent status, pair, Round 1, inspection, and batch terminal commands.
 - `vision-inspect`: host-side wrapper for running the CLI inside the application container.
 - `AGENTS.md`: repository-wide operating and code-change instructions for agents.
-- `skills/visual-inspection-workshop/`: portable workshop facilitation and evaluation skill.
+- `skills/visual-inspection-workshop/`: portable workshop guidance and evaluation skill.
 - `scripts/install-agent-clis.sh`: verifies or installs Codex and Claude Code with their official native installers.
 - `scripts/install-agent-skill.sh`: links the skill into Codex, generic agent, and Claude directories.
 - `REMOTE_EDITORS.md`: optional Cursor and VS Code connection instructions for participants.
