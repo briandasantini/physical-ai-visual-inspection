@@ -37,7 +37,17 @@ Terminal users can run:
 ## Connect an editor
 
 Cursor and VS Code are optional. Install the Brev CLI and your editor on your laptop,
-then run one of these commands:
+select the workshop organization, then open the instance:
+
+```bash
+brev login
+brev org ls
+brev org set <workshop-org>
+brev ls
+brev refresh
+```
+
+Use the `<workshop-org>` name supplied by the facilitator. Then run one of these commands:
 
 ```bash
 brev open <instance-name> code \

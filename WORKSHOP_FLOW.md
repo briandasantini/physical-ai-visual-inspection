@@ -1,57 +1,78 @@
 # Visual inspection workshop flow
 
-## Question
+## Why we are here
 
-Can a vision-language model compare an expected workspace with an observed workspace, return
-the right PASS/FAIL result, and explain the real physical change without inventing one?
+The workshop is a joint investigation of the useful operating envelope for visual
+inspection—not a PASS/FAIL certification exercise. The labeled pairs let us ask where a
+vision-language model is helpful, where it misses or hallucinates, and what the real
+application should require.
 
-## Repeated loop
+Together, explore:
 
-1. Read the labeled pair and write the expected PASS/FAIL result.
-2. Run the model.
-3. Judge the verdict and explanation separately.
-4. Save the evidence.
-5. Change one input and repeat on the same pair.
+- which objects and physical changes the models understand reliably;
+- where the verdict is right but the action, object, or location is wrong;
+- whether contour cues improve detection, distort semantics, or create false alarms;
+- which false positives or false negatives are more costly for the intended workflow;
+- what physical tolerance should separate an acceptable setup from a meaningful error;
+- which object types, actions, nuisance conditions, and edge cases are missing;
+- what additional evidence is needed before prompt changes, conventional vision, or
+  fine-tuning would be justified.
+
+## Working loop
+
+1. Choose a question about the model or intended application.
+2. Inspect a few labeled cases and preserve the original model responses.
+3. Separate verdict quality from action, object, location, and unsupported claims.
+4. Compare the same cases across models or with and without contour cues.
+5. Look for a recurring pattern—and actively search for a case that contradicts it.
+6. Translate the finding into a product requirement, missing-case list, or next experiment.
+
+Dataset labels are reference annotations for scoring. Participants do not need to predict
+or retype them. If a label or image is ambiguous, record that as a data finding rather
+than silently changing the label to match the model.
 
 ## 1. First examples
 
-Use five curated pairs in this order:
-
-1. Baseline — Same Image (`PASS`)
-2. Single object removed (`FAIL`)
-3. Larger configuration change (`FAIL`)
-4. Unexpected object (`FAIL`)
-5. Subtle displacement (`FAIL`)
-
-Run reference + live only. Compare the available models' verdicts, correct observations,
-misses, and hallucinations. Do not add contours until all five baseline runs are reviewed.
+Use five curated cases that introduce a matching setup, removal, configuration change,
+unexpected object, and subtle displacement. Run reference + live first so the model's
+unaided behavior is visible. Compare the models' correct observations, misses,
+hallucinations, action/object grounding, and uncertainty. Then add contours to the same
+cases and ask what changed.
 
 ## 2. Larger set
 
-Choose a category and a fixed sample of the larger labeled evaluation set. Run the sample
-with one model and no contours. Review accuracy, precision, recall, F1, action accuracy,
-item accuracy, NIM latency, and raw examples. Repeat the same ordered sample with default
-contours and inspect every incorrect row.
+Choose a category and fixed sample of the larger labeled set. Inspect accuracy, precision,
+recall, F1, action accuracy, item accuracy, latency, and individual raw responses. Use
+precision to discuss false-alarm cost and recall to discuss missed-change cost; neither is
+the default objective until the intended workflow defines the trade-off. Repeat the same
+ordered sample with contours and look for both improvements and new failure modes.
 
-## 3. Agent cue experiment
+## 3. Agent experiment
 
-Use the persistent side terminal and ask Codex or Claude to design a small controlled sweep.
-Keep the model and inspection prompt fixed while varying one contour factor:
+Use the Jupyter terminal and ask Codex or Claude to investigate one open question. That
+question can concern model reasoning, prompts, contours, acceptable tolerances, error
+trade-offs, missing cases, or fine-tuning data.
+
+For a contour experiment, keep the model and inspection prompt fixed while varying one
+factor:
 
 - difference method: color, channel maximum, or edges;
 - pixel threshold;
 - minimum contour area.
 
-Compare verdict, action, item, contour regions, changed-pixel ratio, preprocessing latency,
-NIM latency, and total latency. Saved results and fresh NIM versions can differ, so compare
-only matched runs.
+For any experiment, compare matched cases and preserve the raw response. Explain whether
+the result changed detection, action/object quality, hallucinations, or only latency.
 
-## Optional exploration
+## Define the ideal case
 
-After the three required passes, test a controlled workspace capture or another dataset pair.
-Change one physical variable at a time and write the expected result before inference.
+Describe an ideal inspection case for the intended workflow. Specify the object,
+meaningful change, acceptable tolerance, nuisance variation, and consequence of a false
+alarm versus a missed change. If the case is not represented, record it as a data gap.
+Unlabeled custom images are qualitative exploration until a domain expert supplies a
+trustworthy annotation policy.
 
 ## Interpretation rule
 
-A correct verdict with an invented explanation is not a clean success. Misses are useful
-evidence when the pair, prompt, model, and cue settings are preserved.
+A correct verdict with an invented explanation is not a clean success. A high aggregate
+score can also hide an unacceptable error type. Misses, hallucinations, ambiguous labels,
+and missing cases are useful findings when the evidence and configuration are preserved.

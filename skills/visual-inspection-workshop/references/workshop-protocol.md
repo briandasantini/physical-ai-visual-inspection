@@ -1,58 +1,67 @@
 # Workshop protocol
 
-## Question
+## Purpose
 
-Can a vision-language model compare an expected workspace with an observed workspace, return
-the right PASS/FAIL result, and explain the real physical change without inventing one?
+Collaboratively characterize where the visual-inspection stack is useful, unreliable, or
+underspecified. The goal is not to make participants guess PASS/FAIL labels. Existing
+labels are reference annotations that make model behavior measurable.
 
-## Repeated loop
+## Questions to keep open
 
-1. Read the labeled pair.
-2. Record the expected PASS/FAIL result before inference.
-3. Run the selected model and input mode.
-4. Judge verdict and explanation separately.
-5. Save JSON evidence.
-6. Change one input and repeat on the same pair.
+- Where does each model detect and explain the real physical change?
+- Where does it miss a change or hallucinate an unsupported object, action, or location?
+- Do contours improve detection while degrading action or object grounding?
+- Which false positives or false negatives are more costly for the intended workflow?
+- What physical displacement, angle, occupancy, or object difference should be tolerated?
+- Which object types, actions, nuisance conditions, or edge cases are absent?
+- What data and held-out evaluation would be necessary before fine-tuning?
+
+## Working loop
+
+1. Choose one question about the model or intended application.
+2. Inspect a small set of labeled cases and preserve original responses.
+3. Judge verdict, action, object, location, hallucinations, and uncertainty separately.
+4. Compare the same cases across models or with and without contours.
+5. Search for both a recurring pattern and a counterexample.
+6. Translate the finding into a product requirement, missing-case list, or next experiment.
+
+Do not alter labels to match a model. Record ambiguous labels or unclear images as data
+findings. Treat unlabeled custom images as qualitative exploration until a domain expert
+defines a trustworthy annotation policy.
 
 ## Phase 1: first examples
 
-Run the curated first examples without contours in this order:
-
-- matching images (`PASS`);
-- one removed object (`FAIL`);
-- a larger configuration change (`FAIL`);
-- an unexpected object (`FAIL`);
-- a subtle displacement (`FAIL`).
-
-Compare available models' verdicts, correct observations, misses, hallucinations, and
-latency. Complete baseline review before introducing contours.
+Use the curated examples to discover the models' unaided behavior. Compare 2B and 8B on
+correct observations, misses, hallucinations, semantic grounding, and uncertainty. Add
+contours to the same cases and ask whether verdict, action, object, or location changes.
 
 ## Phase 2: larger set
 
-Select a category and fixed ordered sample from the labeled evaluation collection. Run
-baseline with one model, then repeat the same sample with default contours. Review verdict,
-action, item, and latency metrics plus every incorrect row. Prioritize Shift/Displace.
+Select a category and fixed ordered sample. Inspect verdict, action, item, and latency
+metrics together with individual raw responses. Interpret precision as false-alarm
+behavior and recall as missed-change behavior; ask which cost the intended workflow can
+tolerate. Look for new failure types that the curated examples did not reveal.
 
-## Phase 3: agent cue experiment
+## Phase 3: agent experiment
 
-Use the agent terminal to run a small `sweep` on one labeled pair. Keep the inspection
-prompt and model fixed while varying only difference method, threshold, or minimum area.
-Compare verdict, action, item, contour regions, changed-pixel ratio, preprocessing latency,
-NIM latency, and total latency.
+Use Codex or Claude to investigate one open question. A controlled contour sweep is one
+option: keep the model and prompt fixed while varying difference method, threshold, or
+minimum area. Prompt comparison, missing-case inventory, tolerance definition, error-cost
+analysis, and fine-tuning data planning are equally valid directions.
 
-The default contour configuration is color difference, threshold 25, and minimum area
-3000. Red boxes are attention hints, not proof of a physical change.
+For any experiment, compare matched evidence and explain whether the change affects
+detection, action/object grounding, hallucinations, or only latency. Ask before a large
+batch or model-service switch.
 
-A correct verdict with an invented explanation is not a clean success. Preserve each
-run as evidence and compare only experiments that use the same labeled pairs.
-
-## Closing output
+## Closing conversation
 
 Summarize:
 
-- strongest and weakest tested categories;
-- verdict errors and explanation hallucinations;
-- effect of contour assistance;
-- latency cost of the selected cue configuration;
-- capture, conventional-vision, VLM, and infrastructure failures separately;
-- required human controls and the next validation gate.
+- strongest and weakest observed behaviors, with counterexamples;
+- hallucinations and semantic errors hidden by correct verdicts;
+- contour benefits and regressions;
+- the desired false-positive/false-negative trade-off and physical tolerance;
+- missing objects, actions, nuisance conditions, and ideal cases;
+- whether the next investment should be requirements work, data collection, conventional
+  vision, prompt design, or fine-tuning;
+- the evidence and held-out test needed for the next decision.

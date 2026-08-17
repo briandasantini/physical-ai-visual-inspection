@@ -16,8 +16,12 @@ Confirm that the instance is visible:
 
 ```bash
 brev login
+brev org ls
+brev org set <workshop-org>
 brev ls
 ```
+
+Use the `<workshop-org>` name supplied by the facilitator.
 
 ## Open the remote repository
 
@@ -57,16 +61,18 @@ Start with this prompt:
 
 ```text
 Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md. Check visual inspection
-status, then guide me through the workshop one phase at a time. Do not run inference
-until I record the expected label.
+status, then help me explore where the models work, miss changes, or hallucinate. Compare
+verdict, action, object, and contour effects; ask what false-positive/false-negative trade-off
+and physical tolerance matter for the intended workflow; and identify missing cases and
+data needed before fine-tuning.
 ```
 
 ## Troubleshooting
 
 - **Editor command not found:** install the editor's shell command, then reopen the
   local terminal.
-- **Instance not found:** run `brev login`, select the correct Brev organization, and
-  run `brev ls` again.
+- **Instance not found:** run `brev org ls`, switch with
+  `brev org set <workshop-org>`, and run `brev ls` again.
 - **Editor does not connect:** run `brev refresh`, then retry `brev open`.
 - **Wrong folder:** use **File → Open Folder** and enter the remote path shown above.
 - **Agent ignores the workflow:** confirm the editor opened the repository root and

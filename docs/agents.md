@@ -1,14 +1,14 @@
-# Work With an Agent
+# Work With Codex/Claude
 
 Codex and Claude Code are installed inside the Brev VM. The setup links a dedicated
-`visual-inspection-workshop` skill into supported agent directories. Cursor and VS Code
-can also connect over Brev-managed SSH.
+`visual-inspection-workshop` skill into both agent environments.
 
 ## Start inside Brev
 
-From the repository root:
+Open the Jupyter terminal from **3 · Explore**, then run:
 
 ```bash
+cd /home/nvidia/physical-ai-visual-inspection
 codex
 # or
 claude
@@ -19,26 +19,28 @@ Each tool asks you to authenticate with your own provider account on first use.
 Use this starting prompt:
 
 ```text
-Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md.
-Check visual inspection status, then guide me through the workshop one phase at a time.
-Do not run inference until I record the expected label.
+Read the workshop context and use the visual-inspection workshop skill. Help me explore
+where 2B and 8B work, miss changes, or hallucinate; how contours affect verdict, action,
+and object quality; which false-positive/false-negative trade-off and physical tolerance
+matter for the intended workflow; which cases are missing; and what data would be needed
+before fine-tuning. Propose one small investigation and explain what it would teach us.
 ```
 
-## What the agent knows
+## What the agent should help with
 
-The repository instructions teach the agent to:
+- inspect original model responses rather than only normalized summaries;
+- compare verdict, action, object, location, hallucinations, and latency separately;
+- run matched comparisons through `./vision-inspect`;
+- connect precision and recall to real false-alarm and missed-change costs;
+- define an ideal case, acceptable physical tolerance, and human-review boundary;
+- identify missing objects, actions, nuisance conditions, and counterexamples;
+- outline the positive, negative, boundary, nuisance, and held-out data needed next;
+- preserve evidence and keep private images and credentials out of Git.
 
-- use `./vision-inspect` rather than calling NIM endpoints directly;
-- preserve the experiment order and labeled expectations;
-- compare verdict correctness and explanation grounding separately;
-- save generated JSON under `evidence/`;
-- keep private images and credentials out of Git;
-- ask before switching model sets or running a large batch;
+Dataset labels are reference annotations, not a quiz. The agent must not change labels to
+match its own output. Unlabeled custom cases remain qualitative until a domain expert
+defines a trustworthy policy.
 
-## Editor path
-
-Use `brev open` from your laptop to connect Cursor or VS Code. Open the repository root
-so the editor agent can discover `AGENTS.md` and the workshop skill.
-
-Do not clone the private dataset onto the laptop. All images remain mounted read-only in
-the Brev environment.
+Cursor and VS Code can also connect over Brev-managed SSH. Open the repository root so
+the editor agent can discover `AGENTS.md` and the workshop skill. Do not copy the private
+dataset onto the laptop.

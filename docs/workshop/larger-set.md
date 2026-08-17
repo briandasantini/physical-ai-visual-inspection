@@ -1,46 +1,48 @@
 # 2. Larger Set
 
-The curated examples reveal failure modes; the larger labeled set tests whether those
-observations generalize.
+The curated examples suggest hypotheses. The larger labeled set shows whether those
+patterns recur—and whether entirely new failure modes appear.
 
-## Choose the sample before inference
+## Explore a sample
 
 1. Open **2 · Larger Set**.
-2. Choose a category and a fixed sample size.
-3. Use one model, beginning with Cosmos Reason2 8B.
-4. Record the category, count, and expected class balance.
-5. Run **A · Run larger-set baseline**.
+2. Choose a category, model, and manageable sample size.
+3. Run the baseline, then rerun the same ordered pairs with contours.
+4. Compare the aggregate metrics, but do not stop there.
+5. Select rows in either table to view the images side by side, original response,
+   normalized scoring response, semantics, latency, and configured prompt bundle.
 
 Keep an interactive batch to roughly ten pairs unless the facilitator approves a larger
 run. Every pair invokes a NIM.
 
-## Read the metrics
+## Turn metrics into application questions
 
-The workshop treats `FAIL` as the positive class.
+- **Accuracy:** How often is the overall verdict right?
+- **Precision:** How often is a reported problem real? Low precision means more false
+  alarms and potentially more unnecessary human review.
+- **Recall:** How many real problems are found? Low recall means more missed changes.
+- **F1:** How balanced are precision and recall? It does not decide which error is more
+  expensive for the real workflow.
+- **Action %:** When a defect is detected, does the response identify what happened?
+- **Object %:** Does it identify the relevant object or labware?
+- **Latency:** Is any quality gain worth the NIM, preprocessing, and total response time?
 
-- **Accuracy:** overall fraction of correct verdicts.
-- **Precision:** how often a predicted difference is real.
-- **Recall:** how many labeled differences the model detects.
-- **F1:** balance between precision and recall.
-- **Action %:** among correctly predicted `FAIL` cases with action labels, how often the
-  response names the expected change type.
-- **Item %:** among those eligible cases, how often the response names the expected item.
-- **Latency:** NIM inference, contour preprocessing, total, and p95 total response time.
+Ask explicitly: should this use case favor fewer false alarms, fewer missed changes, or a
+human-review band? What physical displacement, angle, occupancy change, or object
+difference should be tolerated before the system reacts?
 
-Metrics are only the start. Review every incorrect row and classify the failure:
+## Inspect the rows behind the score
 
-- missed physical change;
-- false alarm on a matching setup;
-- correct verdict with incorrect explanation;
-- ambiguous or unsupported reasoning;
-- category-specific weakness such as subtle displacement.
+Look for:
 
-Open the representative raw outputs under each run. They include a correct result, a miss
-when available, and another contrasting case so the aggregate metrics remain interpretable.
+- correct verdicts with wrong actions or objects;
+- hallucinated changes in otherwise matching setups;
+- missed small, subtle, or low-contrast changes;
+- contour improvements that do not improve semantic grounding;
+- contour regressions or illumination-driven false alarms;
+- a new object, action, nuisance condition, or edge case absent from the curated set;
+- ambiguous labels or images that need domain review.
 
-## Required output
-
-Export the baseline evidence and write one sentence:
-
-> On this fixed sample, the strongest category was ___, the weakest category was ___,
-> and the most important reasoning failure was ___.
+Finish with a short operating hypothesis: where the model appears useful, the error type
+that matters most, the tolerance still needing definition, and the next missing case to
+collect or test.

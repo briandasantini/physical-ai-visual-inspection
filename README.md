@@ -1,7 +1,8 @@
 # Physical AI Visual Inspection Workshop
 
-Evaluate how vision-language models reason about physical differences between expected
-and observed workspace images.
+Explore how vision-language models reason about physical differences between expected
+and observed workspace images, where they miss or hallucinate, and what the intended
+inspection workflow should require.
 
 **[Open the workshop guide](https://briandasantini.github.io/physical-ai-visual-inspection/)**
 · [Launch instructions](https://briandasantini.github.io/physical-ai-visual-inspection/launch/)
@@ -18,16 +19,18 @@ remain in approved SharePoint storage, and NGC supplies only the licensed NIM im
 - Optional Cosmos3 Nano image installed but stopped; it can replace 2B on GPU 0
 - OpenCV contour preprocessing on CPU
 - Visual inspection Gradio UI on port 7860, with links to Brev's JupyterLab terminal
-- Guided flow: first examples → larger-set metrics → agent-led contour experiment
+- Guided flow: first examples → larger-set patterns → open agent-led investigation
 - Parallel 8B-versus-2B workshop comparison
 - Verdict, action, item, contour, NIM latency, preprocessing latency, and total latency evidence
 - Persistent NIM model caches
 - Codex and Claude installed in the Brev host environment
 - Health checks and workshop-safe status reporting
 
-The workshop deliberately starts with a baseline (reference + live), then reruns the
-same evidence with the validated contour-assisted path. This makes the effect on both
-the verdict and reasoning visible.
+The workshop uses baseline and contour-assisted views of the same evidence to separate
+model behavior from cue effects. Participants examine verdict, action, object, location,
+hallucinations, and latency; discuss false-positive versus false-negative cost and
+acceptable physical tolerance; identify missing cases; and decide what data or controls
+would be needed next. It is not a PASS/FAIL certification or a model leaderboard.
 
 ## Run on a Brev VM
 
@@ -50,8 +53,7 @@ attendees never upload files manually.
 Open `http://<instance>:7860`, or configure a Brev Secure Link on port 7860.
 
 The secure link opens the participant website directly. The first two phases use guided
-web controls; the third uses the Brev-hosted JupyterLab terminal. Sections 1 and 2 also
-include buttons that open JupyterLab in a new tab for optional agent-guided work.
+web controls; the third links to the Brev-hosted JupyterLab terminal for Codex/Claude.
 
 The same workshop is also available as a CLI. See `CLI_GUIDE.md`, or start with:
 
@@ -68,11 +70,13 @@ instructions for Codex, Claude Code, and GitHub Copilot. Setup installs Codex an
 on the Brev host and links the workshop skill into each agent directory. Existing working
 CLI installations are preserved. Agents learn to:
 
-- follow first examples → larger set → agent cue experiment;
+- facilitate collaborative discovery rather than ask participants to guess labels;
+- find model strengths, misses, hallucinations, and semantic errors;
 - use the supported CLI and preserve JSON evidence;
-- compare verdict correctness and explanation grounding;
-- compare action/item grounding and all latency components;
-- run controlled cue-method, threshold, and region-area sweeps;
+- compare verdict, action, object, location, cues, and latency on matched cases;
+- connect precision and recall to false-alarm and missed-change cost;
+- ask about physical tolerances, ideal cases, missing coverage, and fine-tuning data;
+- run controlled cue-method, threshold, and region-area sweeps when useful;
 - protect customer data and the NGC credential;
 - keep Nano off unless a facilitator explicitly selects it.
 
@@ -83,7 +87,7 @@ Reinstall or refresh the links manually with:
 ./scripts/install-agent-skill.sh
 ```
 
-Participants can use either Jupyter button in the website, open **Terminal** from the
+Participants can use the Jupyter button in the website, open **Terminal** from the
 JupyterLab Launcher, and start an agent from the repository:
 
 ```bash

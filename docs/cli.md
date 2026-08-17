@@ -1,26 +1,17 @@
 # Use the CLI
 
 The CLI and browser app share the same dataset index, contour pipeline, prompts, NIM
-clients, parser, and metric functions.
+clients, parser, and metric functions. Use it as a toolbox for questions raised during
+the workshop.
 
-## Check readiness
+## Check readiness and discover cases
 
 ```bash
 ./vision-inspect status
 ./vision-inspect pairs --collection round1
 ```
 
-## First examples
-
-```bash
-./vision-inspect round1 --models reason2-8b --mode baseline \
-  --output evidence/round1-baseline.json
-
-./vision-inspect round1 --models reason2-8b --mode contour \
-  --output evidence/round1-contour.json
-```
-
-## Inspect one pair
+## Compare model reasoning and contour effects
 
 ```bash
 ./vision-inspect inspect --pair <pair-id> \
@@ -28,7 +19,11 @@ clients, parser, and metric functions.
   --output evidence/pair-comparison.json
 ```
 
-## Larger-set comparison
+Read the original responses and compare verdict, action, object, location, unsupported
+claims, and uncertainty. A contour-assisted answer can improve one dimension while
+regressing another.
+
+## Look for patterns in a larger sample
 
 ```bash
 ./vision-inspect batch --category Shift/Displace --count 10 \
@@ -37,9 +32,11 @@ clients, parser, and metric functions.
 ```
 
 The summary reports verdict metrics, action/item grounding, NIM latency, contour
-preprocessing latency, and total latency. Representative raw outputs remain in the JSON.
+preprocessing latency, and total latency. Precision exposes false-alarm behavior; recall
+exposes missed-change behavior. The intended workflow must decide which cost matters
+more. Inspect individual raw rows before drawing a conclusion.
 
-## Agent experiment
+## Explore one cue hypothesis
 
 ```bash
 ./vision-inspect sweep --pair <pair-id> --model reason2-8b \
@@ -49,7 +46,14 @@ preprocessing latency, and total latency. Representative raw outputs remain in t
 ```
 
 Use `--diff-method`, `--threshold`, and `--min-area` on `inspect`, `round1`, or `batch`
-when you want one fixed contour configuration rather than a sweep.
+when one fixed contour configuration is useful. Keep comparisons matched and explain
+whether a cue changed real physical grounding or merely changed the answer.
+
+## Before fine-tuning
+
+Use the evidence to define the intended inspection case, acceptable physical tolerance,
+false-positive/false-negative trade-off, missing object/action/nuisance coverage, and an
+untouched held-out test. Do not alter dataset labels to match a model.
 
 ## Optional Nano
 

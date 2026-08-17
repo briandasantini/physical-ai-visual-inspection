@@ -4,6 +4,22 @@ from visual_inspection.evaluation import calculate_metrics, score_semantics
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_removed_does_not_match_moved_action(self):
+        record = {
+            "pair_id": "evaluation-shift",
+            "category": "Shift/Displace",
+            "error_type": "Shifted labware",
+            "expected": "FAIL",
+            "verdict": "FAIL",
+            "changes": "- REMOVED — plate — selected deck region",
+            "issues": "The expected plate is absent from the same deck region.",
+        }
+
+        scored = score_semantics(record)
+
+        self.assertEqual(scored["expected_action"], "MOVED")
+        self.assertFalse(scored["action_correct"])
+
     def test_calculates_fail_as_positive_class(self):
         metrics = calculate_metrics(
             [

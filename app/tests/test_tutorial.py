@@ -1,19 +1,20 @@
 import unittest
 
-from visual_inspection.tutorial import TUTORIAL_STEPS, progress_summary
+from visual_inspection.tutorial import PHASES, WORKSHOP_LOOP
 
 
-class TutorialProgressTests(unittest.TestCase):
-    def test_empty_progress_points_to_first_gate(self):
-        summary = progress_summary([])
+class TutorialContentTests(unittest.TestCase):
+    def test_loop_describes_discovery_instead_of_prediction(self):
+        self.assertIn("inspect what the model saw or invented", WORKSHOP_LOOP)
+        self.assertNotIn("Write the expected", WORKSHOP_LOOP)
 
-        self.assertIn("0/8 (0%)", summary)
-        self.assertIn(TUTORIAL_STEPS[0], summary)
+    def test_phases_have_no_times_and_cover_product_questions(self):
+        self.assertTrue(all(len(phase) == 2 for phase in PHASES))
+        descriptions = " ".join(description for _, description in PHASES)
 
-    def test_complete_progress_reports_completion(self):
-        summary = progress_summary(TUTORIAL_STEPS)
-
-        self.assertIn("Tutorial complete", summary)
+        self.assertIn("false-positive versus false-negative", descriptions)
+        self.assertIn("missing cases", descriptions)
+        self.assertNotIn("minutes", descriptions)
 
 
 if __name__ == "__main__":

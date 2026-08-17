@@ -1,4 +1,4 @@
 interface:
   display_name: "Visual Inspection Workshop"
-  short_description: "Guide and evaluate visual inspection exercises"
-  default_prompt: "Use $visual-inspection-workshop to guide me through the next visual inspection exercise."
+  short_description: "Explore model behavior and inspection requirements"
+  default_prompt: "Use $visual-inspection-workshop to help me investigate model strengths, hallucinations, cue effects, error trade-offs, missing cases, and data needs."

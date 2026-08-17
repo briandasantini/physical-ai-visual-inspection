@@ -1,5 +1,5 @@
 site_name: Physical AI Visual Inspection Workshop
-site_description: Evaluate vision-language model reasoning on expected and observed workspace images.
+site_description: Explore vision-language model behavior, inspection requirements, and data needs on physical workspace images.
 site_url: https://briandasantini.github.io/physical-ai-visual-inspection/
 repo_url: https://github.com/briandasantini/physical-ai-visual-inspection
 repo_name: briandasantini/physical-ai-visual-inspection
@@ -23,19 +23,17 @@ theme:
 nav:
   - Start Here: index.md
   - Launch the Environment: launch.md
+  - Cosmos Models: models.md
   - Workshop:
       - Workshop Map: workshop/index.md
       - 1. First Examples: workshop/first-examples.md
       - 2. Larger Set: workshop/larger-set.md
-      - 3. Add Contours: workshop/contours.md
-      - 4. Explore: workshop/explore.md
+      - Understand Contour Cues: workshop/contours.md
+      - 3. Explore with Codex/Claude: workshop/explore.md
   - Work With an Agent: agents.md
   - Use the CLI: cli.md
-  - Facilitator Guide: facilitator.md
   - Reference:
       - Architecture: reference/architecture.md
-      - Data and Privacy: reference/data-and-privacy.md
-      - Troubleshooting: reference/troubleshooting.md
 
 markdown_extensions:
   - admonition

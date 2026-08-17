@@ -1,12 +1,13 @@
 ---
 name: visual-inspection-workshop
-description: Guide and evaluate a Physical AI visual inspection workshop using the launchable CLI, labeled image-pair collections, NVIDIA Cosmos Reason2 or optional Cosmos3 Nano, and baseline-versus-contour reasoning comparisons. Use when an agent needs to check workshop readiness, explain or run exercises, inspect image pairs, compare model reasoning, evaluate a labeled batch, interpret metrics, export evidence, troubleshoot the Brev environment, or help participants choose the next exercise.
+description: Guide a collaborative Physical AI visual inspection workshop using the launchable CLI, labeled image-pair collections, NVIDIA Cosmos Reason2 or optional Cosmos3 Nano, and baseline-versus-contour comparisons. Use when an agent needs to characterize model strengths, misses, hallucinations, semantic grounding, error trade-offs, missing cases, tolerance requirements, or data needs; run matched experiments; interpret metrics; export evidence; or troubleshoot the Brev environment.
 ---
 
 # Visual Inspection Workshop
 
-Operate the workshop through its supported CLI and preserve the experiment's order,
-labels, prompt, cue settings, and latency evidence.
+Operate the workshop through its supported CLI and help participants discover the useful
+operating envelope for their application. Preserve labels and matched evidence, but do
+not turn the session into a label-prediction exercise or model leaderboard.
 
 ## Locate and preflight
 
@@ -23,15 +24,16 @@ direct NIM API calls so the website and agent use identical prompts and parsing.
 
 - **Teach or continue the workshop:** follow the three phases in
   `references/workshop-protocol.md` in order.
-- **Inspect one labeled pair:** list pairs, record the expected label, then run both
-  baseline and contour modes.
+- **Inspect one labeled pair:** use its label as a reference, inspect raw reasoning, and
+  compare baseline and contour modes.
 - **Compare models:** use the same pair and input mode for each selected model.
 - **Evaluate a category:** run a small fixed sample baseline first, then rerun the same
   sample with contours.
-- **Run the agent lab:** keep the prompt and model fixed, then sweep one supported contour
-  method or parameter and interpret both quality and latency.
-- **Test a custom workspace pair:** require expected, observed, and a participant-written
-  expected result before inference.
+- **Run the agent lab:** investigate one open question about model reasoning, prompts,
+  contours, error trade-offs, tolerances, missing cases, or data needs.
+- **Test a custom workspace pair:** first define the intended behavior, meaningful physical
+  tolerance, and cost of a false alarm versus a missed change. Treat it as qualitative
+  exploration until a domain expert supplies a trustworthy label policy.
 - **Use Nano:** read `references/environment.md`; activate it only when explicitly
   requested because it replaces Reason2 2B on GPU 0.
 
@@ -74,10 +76,17 @@ For every result, report these separately:
 3. Whether the explanation invents unsupported changes.
 4. Whether contour assistance changes the verdict or grounding.
 5. NIM, preprocessing, and total latency after correctness and grounding.
+6. Whether the pattern suggests a false-alarm risk, missed-change risk, ambiguous label,
+   or missing object/action/nuisance case.
 
 Treat `FAIL` as the positive class for precision, recall, and F1. Do not reinterpret or
-rewrite dataset labels to match a model. Distinguish saved historical results from a new
-rerun, which may differ.
+rewrite dataset labels to match a model. Explain that precision reflects false-alarm
+behavior and recall reflects missed-change behavior; the application must decide which
+cost matters more. Distinguish saved historical results from a new rerun, which may differ.
+
+Before recommending fine-tuning, ask for the ideal inspection case, acceptable physical
+tolerance, missing positive and negative examples, nuisance variation, and a held-out
+test that represents the real workflow.
 
 ## Guardrails
 

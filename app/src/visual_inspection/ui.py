@@ -10,14 +10,9 @@ from PIL import Image
 
 from .config import MODELS, default_model_label, model_from_label, model_labels
 from .datasets import InspectionPair, build_index, filter_pairs
-from .evaluation import calculate_metrics, metrics_row
-from .nim_client import health_status, inspect_workspace
-from .tutorial import (
-    PHASES,
-    TUTORIAL_STEPS,
-    WORKSHOP_LOOP,
-    progress_summary,
-)
+from .evaluation import add_semantic_scores, calculate_metrics, metrics_row
+from .nim_client import health_status, inspect_workspace, prompt_bundle_for
+from .tutorial import PHASES
 from .vision import build_contour_diff
 
 
@@ -65,25 +60,70 @@ NVIDIA_THEME = gr.themes.Default(
 CSS = """
 .gradio-container { max-width: 1480px !important; }
 .hero { border-left: 6px solid #76b900; padding-left: 18px; }
-.status-card { border: 1px solid #d8d8d8; padding: 10px 14px; border-radius: 8px; }
-.guide-card { border: 1px solid #d8d8d8; border-radius: 10px; padding: 10px 16px; min-height: 160px; }
-.guide-card h3 { color: #3b5f00; }
-.tutorial-progress { border-left: 6px solid #76b900; padding: 4px 16px; margin: 8px 0 16px; }
+.status-row { align-items: center; gap: 14px; margin: 18px 0 34px; }
+.status-card { border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+.status-actions { flex: 0 0 190px !important; max-width: 190px; }
+.status-refresh { width: 100%; }
+.guide-card { border: 1px solid #d8d8d8; border-radius: 10px; padding: 10px 16px; min-height: 145px; }
+.guide-card .guide-card-button { margin: 0; }
+.guide-card .guide-card-button button { justify-content: flex-start; padding: 4px 0 8px; color: #3b5f00; font-size: 1.5rem; font-weight: 700; text-align: left; background: transparent; border: 0; box-shadow: none; }
+.guide-card .guide-card-button button:hover { color: #548600; background: transparent; }
+.guide-card p { font-size: 1.08rem; line-height: 1.55; }
+.guide-docs-link { margin: 0 0 18px; }
+.guide-docs-link p { margin: 0; font-size: 0.95rem; line-height: 1.4; }
+.guide-docs-link a,
+.guide-docs-link a:visited {
+    color: #6b7280 !important;
+    font-weight: 500;
+    text-decoration-color: #9ca3af;
+    transition: color 120ms ease, text-decoration-color 120ms ease;
+}
+.guide-docs-link a:hover,
+.guide-docs-link a:focus-visible,
+.guide-docs-link a:active {
+    color: #639d00 !important;
+    text-decoration-color: #76b900;
+}
+.workshop-tabs > .tab-wrapper > .tab-container[role="tablist"] {
+    margin-bottom: 18px;
+}
+.workshop-tabs > .tab-wrapper > .tab-container[role="tablist"] > button[role="tab"] {
+    padding: 11px 16px;
+    font-size: 1.12rem !important;
+    font-weight: 700 !important;
+}
+.section-intro h2 { font-size: clamp(1.8rem, 2.25vw, 2.3rem); line-height: 1.2; }
+.section-intro p, .section-intro li { font-size: 1.15rem; line-height: 1.6; }
+@media (max-width: 760px) {
+    .status-row { margin-bottom: 24px; }
+    .status-actions { flex: 1 1 100% !important; max-width: none; }
+    .workshop-tabs > .tab-wrapper > .tab-container[role="tablist"] > button[role="tab"] {
+        padding: 9px 10px;
+        font-size: 1rem !important;
+    }
+}
 """
 
 
 DATA_ROOT = os.getenv("VISUAL_INSPECTION_DATA_ROOT", "/data")
-DATA_PROFILE = os.getenv("VISUAL_INSPECTION_DATA_PROFILE", "workshop")
-DATA_VERSION = os.getenv("VISUAL_INSPECTION_DATA_VERSION", "unknown")
 DOCS_URL = os.getenv(
     "VISUAL_INSPECTION_DOCS_URL",
     "https://briandasantini.github.io/physical-ai-visual-inspection/",
 ).strip()
-JUPYTER_URL = os.getenv("VISUAL_INSPECTION_JUPYTER_URL", "").strip()
-if not JUPYTER_URL and os.getenv("BREV_ENV_ID", "").strip():
-    JUPYTER_URL = (
-        f"https://jupyter-{os.environ['BREV_ENV_ID'].strip()}.apps.run.brev.nvidia.com/lab"
-    )
+
+
+def _jupyter_url() -> str:
+    explicit_url = os.getenv("VISUAL_INSPECTION_JUPYTER_URL", "").strip()
+    if explicit_url:
+        return explicit_url
+    brev_environment_id = os.getenv("BREV_ENV_ID", "").strip()
+    if brev_environment_id:
+        return f"https://jupyter-{brev_environment_id}.apps.run.brev.nvidia.com/lab"
+    return ""
+
+
+JUPYTER_URL = _jupyter_url()
+
 TABLE_HEADERS = ["Pair ID", "Collection", "Category", "Expected", "Scene", "Error"]
 RESULT_HEADERS = [
     "Model",
@@ -101,8 +141,25 @@ BATCH_HEADERS = [
     "Expected",
     "Verdict",
     "Correct?",
+    "Expected action",
+    "Action correct?",
+    "Expected object",
+    "Object correct?",
     "Confidence",
     "Issue",
+]
+BATCH_COMPARISON_HEADERS = [
+    "Run",
+    "Pairs",
+    "Accuracy",
+    "Precision",
+    "Recall",
+    "F1",
+    "Action %",
+    "Object/item %",
+    "Avg NIM",
+    "Avg preprocessing",
+    "Avg total",
 ]
 
 
@@ -157,11 +214,21 @@ def _reasoning_markdown(results: list[dict], unavailable: list[str]) -> str:
     if unavailable:
         sections.append(f"> Skipped because not running: {', '.join(unavailable)}")
     for result in results:
-        sections.append(
+        section = (
             f"### {result['model']} · {result['analysis_mode']}\n"
-            f"**{result['verdict']} / {result['confidence']}** — {result['issues']}\n\n"
+            f"**Scored result:** {result['verdict']} / {result['confidence']} — "
+            f"{result['issues']}\n\n"
+            f"**Original selected model response**\n\n"
             f"```text\n{result['raw_response']}\n```"
         )
+        normalized = result.get("normalized_response", result["raw_response"])
+        if normalized.strip() != result["raw_response"].strip():
+            section += (
+                "\n\n<details><summary>Normalized response used for scoring</summary>\n\n"
+                f"```text\n{normalized}\n```\n"
+                "</details>"
+            )
+        sections.append(section)
     return "\n\n".join(sections) or "No model was available."
 
 
@@ -229,7 +296,7 @@ def run_workshop_comparison(
         raise gr.Error("Load or upload both images first.")
     expected = expected.strip().upper()
     if expected not in {"PASS", "FAIL"}:
-        raise gr.Error("Record the expected result as PASS or FAIL before inference.")
+        raise gr.Error("This comparison needs a labeled PASS or FAIL reference pair.")
     results, unavailable, contour_image = _run_selected_models(
         reference,
         live,
@@ -249,29 +316,6 @@ def run_workshop_comparison(
         _reasoning_markdown(results, unavailable),
         evidence,
     )
-
-
-def compare_pair_runs(baseline: dict | None, contour: dict | None):
-    if not baseline or not contour:
-        raise gr.Error("Run both baseline and contour-assisted comparisons first.")
-    if baseline.get("pair_id") != contour.get("pair_id"):
-        raise gr.Error("The two runs used different pairs. Rerun both on the same pair.")
-    baseline_by_model = {item["model"]: item for item in baseline["results"]}
-    contour_by_model = {item["model"]: item for item in contour["results"]}
-    rows = []
-    for model in sorted(set(baseline_by_model) | set(contour_by_model)):
-        before = baseline_by_model.get(model, {})
-        after = contour_by_model.get(model, {})
-        rows.append(
-            [
-                model,
-                before.get("verdict", "—"),
-                after.get("verdict", "—"),
-                before.get("issues", "—"),
-                after.get("issues", "—"),
-            ]
-        )
-    return rows
 
 
 def run_inspection(
@@ -295,6 +339,74 @@ def run_inspection(
     )
     result_dict = result.to_dict()
     return contour.image, _verdict_markdown(result_dict), result.raw_response, result_dict
+
+
+def _semantic_result_text(value: bool | None) -> str:
+    if value is None:
+        return "Not scored"
+    return "Yes" if value else "No"
+
+
+def _selected_row_index(index: int | tuple | list) -> int:
+    row_index = index[0] if isinstance(index, (tuple, list)) else index
+    try:
+        return int(row_index)
+    except (TypeError, ValueError) as error:
+        raise gr.Error("Select a result row.") from error
+
+
+def _select_workshop_tab(tab_id: str):
+    return gr.Tabs(selected=tab_id)
+
+
+def inspect_batch_row(evidence: dict | None, evt: gr.SelectData):
+    if not evidence or not evidence.get("records"):
+        raise gr.Error("Run this larger-set pass before selecting a result.")
+    row_index = _selected_row_index(evt.index)
+    records = evidence["records"]
+    if row_index < 0 or row_index >= len(records):
+        raise gr.Error("The selected row is outside the current result set.")
+
+    record = records[row_index]
+    reference = Image.open(record["reference"]).convert("RGB")
+    observed = Image.open(record["live"]).convert("RGB")
+    verdict_correct = record.get("expected") == record.get("verdict")
+    detail = (
+        f"### {record['pair_id']} · {record['analysis_mode']}\n"
+        f"**Scene:** {record['scene']} · **Category:** {record['category']} · "
+        f"**Error:** {record['error_type']}  \n"
+        f"**Expected verdict:** {record['expected']} · **Predicted:** "
+        f"{record['verdict']} · **Correct:** {'Yes' if verdict_correct else 'No'}  \n"
+        f"**Expected action:** {record.get('expected_action') or '—'} · "
+        f"**Action grounded:** {_semantic_result_text(record.get('action_correct'))} · "
+        f"**Expected object:** {record.get('expected_item') or '—'} · "
+        f"**Object grounded:** {_semantic_result_text(record.get('item_correct'))}  \n"
+        f"**Confidence:** {record['confidence']} · **NIM:** "
+        f"{record['latency_seconds']:.2f}s · **Preprocessing:** "
+        f"{record['preprocessing_seconds']:.2f}s · **Total:** "
+        f"{record['total_seconds']:.2f}s  \n"
+        f"**Normalized issue used for scoring:** {record['issues']}"
+    )
+    model = model_from_label(record["model"])
+    prompt_bundle = prompt_bundle_for(
+        model,
+        contour_assisted=record.get("analysis_mode") == "Contour-assisted",
+    )
+    if record.get("latency_seconds") == 0:
+        prompt_bundle = (
+            "NO NIM PROMPT WAS SENT: the expected and observed images were byte-identical, "
+            "so the pipeline returned deterministic PASS.\n\n"
+            "CONFIGURED PROMPT BUNDLE IF INFERENCE HAD BEEN REQUIRED\n\n"
+            f"{prompt_bundle}"
+        )
+    return (
+        reference,
+        observed,
+        detail,
+        record.get("raw_response", ""),
+        record.get("normalized_response", record.get("raw_response", "")),
+        prompt_bundle,
+    )
 
 
 def run_batch(category: str, sample_count: int, model_label: str, mode: str):
@@ -326,11 +438,15 @@ def run_batch(category: str, sample_count: int, model_label: str, mode: str):
         ).to_dict()
         records.append({**pair.to_dict(), **result})
 
+    records = add_semantic_scores(records)
     metrics = calculate_metrics(records)
     summary = (
         f"### {mode}: {metrics['correct']}/{metrics['pairs']} correct\n"
         f"**Accuracy:** {metrics['accuracy']:.0%} · **Precision:** {metrics['precision']:.0%} · "
-        f"**Recall:** {metrics['recall']:.0%} · **F1:** {metrics['f1']:.0%}"
+        f"**Recall:** {metrics['recall']:.0%} · **F1:** {metrics['f1']:.0%}  \n"
+        f"**Semantic action:** {metrics['action_accuracy']:.0%} "
+        f"({metrics['action_total']} scored) · **Object/item:** "
+        f"{metrics['item_accuracy']:.0%} ({metrics['item_total']} scored)"
     )
     rows = [
         [
@@ -339,6 +455,10 @@ def run_batch(category: str, sample_count: int, model_label: str, mode: str):
             record["expected"],
             record["verdict"],
             "Yes" if record["expected"] == record["verdict"] else "No",
+            record.get("expected_action") or "—",
+            _semantic_result_text(record.get("action_correct")),
+            record.get("expected_item") or "—",
+            _semantic_result_text(record.get("item_correct")),
             record["confidence"],
             record["issues"],
         ]
@@ -418,136 +538,69 @@ def load_pair(pair_id: str):
 def build_demo() -> gr.Blocks:
     round_one = _round_one_pairs()
     round_one_choices = _pair_choices(round_one)
-    all_pairs = list(_index())
-    all_choices = _pair_choices(all_pairs[:200])
 
     with gr.Blocks(title="Physical AI Visual Inspection") as demo:
         gr.Markdown(
             f"""<div class="hero">
 
 # Physical AI Visual Inspection Workshop
-### Establish a baseline, inspect the misses, then add visual guidance
 
-**The loop:** {WORKSHOP_LOOP}
+Test how NVIDIA Cosmos can check a lab deck before an experiment starts by detecting
+removed, added, moved, or changed equipment.
 
 [Open the full workshop guide]({DOCS_URL})
 
 </div>"""
         )
 
-        status = gr.Markdown(_status_markdown(), elem_classes=["status-card"])
-        refresh_status = gr.Button("Refresh model status", size="sm")
+        with gr.Row(elem_classes=["status-row"]):
+            with gr.Column(scale=1, min_width=0):
+                status = gr.Markdown(_status_markdown(), elem_classes=["status-card"])
+            with gr.Column(
+                scale=0,
+                min_width=190,
+                elem_classes=["status-actions"],
+            ):
+                refresh_status = gr.Button(
+                    "Refresh model status",
+                    size="sm",
+                    elem_classes=["status-refresh"],
+                )
         refresh_status.click(_status_markdown, outputs=status)
 
-        with gr.Tabs():
-            with gr.Tab("Workshop Guide"):
+        with gr.Tabs(
+            selected="workshop-guide",
+            elem_classes=["workshop-tabs"],
+        ) as workshop_tabs:
+            with gr.Tab("Workshop Guide", id="workshop-guide"):
                 gr.Markdown(
-                    f"""
-## One workshop, three passes
-
-The environment contains the app, pinned dataset **{DATA_PROFILE}/{DATA_VERSION}**, and
-the model services. The guided exercises run directly in this website.
-"""
+                    f"[Open the full documented workshop guide ↗]({DOCS_URL})",
+                    elem_classes=["guide-docs-link"],
                 )
-                gr.Markdown(
-                    """
-## NVIDIA Cosmos vision-language models
-
-**NVIDIA Cosmos** is a family of open models for physical AI. This evaluation explores two
-series: Cosmos Reason2 and Cosmos3.
-
-### Cosmos Reason2
-
-- **Sizes:** [2B](https://huggingface.co/nvidia/Cosmos-Reason2-2B),
-  [8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B), and
-  [32B](https://huggingface.co/nvidia/Cosmos-Reason2-32B)
-- **Base architecture:** Qwen3-VL 2B, 8B, and 32B respectively
-- **Type:** post-trained vision-language model
-- **Capabilities:** spatio-temporal reasoning, object detection with 2D/3D localization,
-  long-context video up to 256K tokens, and chain-of-thought reasoning
-- **Precision:** BF16 only; minimum 32 GB GPU memory
-- **Learn more:** [GitHub](https://github.com/nvidia-cosmos/cosmos-reason2) ·
-  [intro video](https://www.youtube.com/watch?v=kcrDwWgRoTo&t=193s)
-
-### Cosmos3
-
-- **Sizes:** [Nano](https://huggingface.co/nvidia/Cosmos3-Nano), with an 8B reasoner and
-  8B generator, and [Super](https://huggingface.co/nvidia/Cosmos3-Super), with a 32B
-  reasoner and 32B generator
-- **Architecture:** Mixture-of-Transformers with reasoner and generator towers sharing a
-  common representation
-- **Reasoner tower:** scene understanding, reasoning, and next-token prediction
-- **Generator tower:** video, audio, and action-sequence generation; not tested here
-- **Learn more:** [Cosmos3 overview](https://huggingface.co/blog/nvidia/cosmos-3-for-physical-ai) ·
-  [reasoner cookbook](https://github.com/NVIDIA/cosmos/tree/main/cookbooks/cosmos3/reasoner) ·
-  [Nano Reasoner NIM](https://catalog.ngc.nvidia.com/orgs/nim/nvidia/containers/cosmos3-reasoner)
-
-For simplicity, the hands-on exercises use the two smallest **Reason2** configurations,
-2B and 8B. **Cosmos3 Nano Reasoner** is available as an optional comparison. Reason2 32B
-and Cosmos3 Super are introduced here but are not started in the workshop environment.
-
-The experiment asks where the models reason well, where they miss meaningful changes, and
-whether pixel-level visual cues help focus their reasoning on relevant image regions.
-"""
-                )
-                gr.Markdown(
-                    """
-## Optional: use Cursor, VS Code, Codex, or Claude
-
-The website is enough for the workshop. If you want an agent working directly in Brev,
-run one of these commands from a **terminal on your laptop**:
-
-```bash
-brev open <instance-name> code --dir /home/nvidia/workspace/physical-ai-visual-inspection/physical-ai-visual-inspection
-brev open <instance-name> cursor --dir /home/nvidia/workspace/physical-ai-visual-inspection/physical-ai-visual-inspection
-```
-
-In the remote editor terminal, run `./vision-inspect status`, then use the editor's agent or
-start `codex` or `claude`. Read `REMOTE_EDITORS.md` in the repository for prerequisites
-and troubleshooting. Closing the editor does **not** stop the paid Brev instance.
-"""
-                )
+                phase_buttons = []
                 with gr.Row(equal_height=True):
-                    for title, description, duration in PHASES:
-                        gr.Markdown(
-                            f"### {title}\n{description}\n\n**Time:** {duration}",
-                            elem_classes=["guide-card"],
-                        )
+                    for title, description in PHASES:
+                        with gr.Column(elem_classes=["guide-card"]):
+                            phase_buttons.append(
+                                gr.Button(
+                                    title,
+                                    elem_classes=["guide-card-button"],
+                                )
+                            )
+                            gr.Markdown(description)
 
-                gr.Markdown("## Follow these steps")
-                tutorial_progress = gr.Markdown(
-                    progress_summary([]),
-                    elem_classes=["tutorial-progress"],
-                )
-                tutorial_checklist = gr.CheckboxGroup(
-                    choices=TUTORIAL_STEPS,
-                    label="Workshop evidence checklist",
-                )
-                tutorial_checklist.change(
-                    progress_summary,
-                    inputs=tutorial_checklist,
-                    outputs=tutorial_progress,
-                )
-
-                with gr.Accordion("Optional Cosmos3 Nano", open=False):
-                    gr.Markdown(
-                        "Nano is installed but stopped, so it uses no GPU. It shares GPU 0 "
-                        "with Reason2 2B. Switch between them with "
-                        "`./scripts/select-model-set.sh nano` or "
-                        "`./scripts/select-model-set.sh reason2`. Reason2 8B stays on GPU 1."
-                    )
-
-            with gr.Tab("1 · First Examples"):
+            with gr.Tab("1 · First Examples", id="first-examples"):
                 gr.Markdown(
                     """
 ## Start with the curated examples
 
-1. Load one labeled pair and read the expected result.
-2. Run **Baseline**: models see only reference + live.
-3. Read the raw reasoning. Mark correct details, misses, and hallucinations.
-4. Repeat for all five examples before adding contours.
-5. Run **Contour-assisted** on the same pair and compare what changed.
-"""
+1. Load a pair and use its label as a dataset reference—not as a prediction exercise.
+2. Run **Baseline** and read each model's original response.
+3. Separate a correct verdict from a correct action, object, and location.
+4. Notice misses, hallucinations, uncertainty, and differences between 2B and 8B.
+5. Add contours on the same pair and ask what changed in both detection and meaning.
+""",
+                    elem_classes=["section-intro"],
                 )
                 with gr.Row():
                     round_choice = gr.Dropdown(
@@ -568,8 +621,8 @@ and troubleshooting. Closing the editor does **not** stop the paid Brev instance
                     )
                 with gr.Row():
                     round_expected = gr.Textbox(
-                        label="Expected result — record before running",
-                        placeholder="PASS or FAIL",
+                        label="Dataset reference label",
+                        interactive=False,
                     )
                     round_models = gr.CheckboxGroup(
                         choices=model_labels(),
@@ -626,70 +679,23 @@ and troubleshooting. Closing the editor does **not** stop the paid Brev instance
                     outputs=[round_contour, contour_table, contour_reasoning, contour_state],
                 )
 
-                compare_pair_button = gr.Button("Compare baseline vs contour reasoning")
-                pair_comparison = gr.Dataframe(
-                    headers=[
-                        "Model",
-                        "Baseline verdict",
-                        "Contour verdict",
-                        "Baseline explanation",
-                        "Contour explanation",
-                    ],
-                    interactive=False,
-                )
-                compare_pair_button.click(
-                    compare_pair_runs,
-                    inputs=[baseline_state, contour_state],
-                    outputs=pair_comparison,
-                )
                 with gr.Row():
                     download_baseline = gr.DownloadButton("Download baseline JSON")
                     download_contour = gr.DownloadButton("Download contour JSON")
                 download_baseline.click(export_result, inputs=baseline_state, outputs=download_baseline)
                 download_contour.click(export_result, inputs=contour_state, outputs=download_contour)
 
-                with gr.Accordion("Try the first examples with an agent", open=False):
-                    gr.Markdown(
-                        """
-Start `codex` or `claude` in the workshop repository, then paste:
-
-```text
-Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md. Guide me through
-phase 1 using the curated first examples. Check readiness and list the Round 1 pairs.
-Before each inference, ask me to predict PASS or FAIL and tell you what I expect to
-change. Show me the exact vision-inspect command before running it. Compare Reason2 2B
-and 8B on baseline inputs first, then rerun the same pair with contours. Explain correct
-details, misses, and unsupported claims, and save the JSON evidence under evidence/.
-```
-
-Useful starting commands: `./vision-inspect status` and
-`./vision-inspect pairs --collection round1`.
-
-In JupyterLab, open **Terminal** from the Launcher, then run:
-
-```bash
-cd /home/nvidia/physical-ai-visual-inspection
-claude  # or: codex
-```
-"""
-                    )
-                    if JUPYTER_URL:
-                        gr.Button(
-                            "Open Jupyter terminal ↗",
-                            link=JUPYTER_URL,
-                            link_target="_blank",
-                            size="sm",
-                        )
-
-            with gr.Tab("2 · Larger Set"):
+            with gr.Tab("2 · Larger Set", id="larger-set"):
                 gr.Markdown(
                     """
-## Check whether the first five examples generalize
+## Find the patterns—and the surprises
 
 Choose a category and sample size. Run baseline first, then rerun the **same ordered
-pairs** with contours. Ten pairs can take several minutes. Inspect every incorrect row;
-the aggregate score alone is not the workshop finding.
-"""
+pairs** with contours. Select any row to inspect its images, raw response, semantics, and
+prompt. Use precision and recall to discuss the real product trade-off: are false alarms
+or missed changes more costly, and what amount of physical deviation should count?
+""",
+                    elem_classes=["section-intro"],
                 )
                 with gr.Row():
                     batch_category = gr.Dropdown(
@@ -718,6 +724,9 @@ the aggregate score alone is not the workshop finding.
 
                 batch_baseline_state = gr.State()
                 batch_contour_state = gr.State()
+                gr.Markdown(
+                    "Select any cell in either results table to inspect that pair below."
+                )
                 with gr.Row():
                     with gr.Column():
                         batch_baseline_summary = gr.Markdown("Baseline not run yet.")
@@ -739,7 +748,7 @@ the aggregate score alone is not the workshop finding.
                 )
                 compare_batch_button = gr.Button("C · Compare larger-set metrics", variant="primary")
                 batch_comparison = gr.Dataframe(
-                    headers=["Run", "Pairs", "Accuracy", "Precision", "Recall", "F1"],
+                    headers=BATCH_COMPARISON_HEADERS,
                     interactive=False,
                 )
                 compare_batch_button.click(
@@ -761,126 +770,164 @@ the aggregate score alone is not the workshop finding.
                     outputs=download_batch_contour,
                 )
 
-                with gr.Accordion("Try the larger set with an agent", open=False):
+                gr.Markdown("## Inspect a selected result")
+                batch_selected_detail = gr.Markdown(
+                    "Run a larger-set pass, then select any row from its output table."
+                )
+                with gr.Row(equal_height=True):
+                    batch_selected_reference = gr.Image(
+                        label="Expected image",
+                        type="pil",
+                        height=420,
+                        interactive=False,
+                    )
+                    batch_selected_observed = gr.Image(
+                        label="Observed image",
+                        type="pil",
+                        height=420,
+                        interactive=False,
+                    )
+                with gr.Accordion("Model response and scoring normalization", open=True):
+                    with gr.Row():
+                        batch_selected_raw = gr.Code(
+                            label="Original selected model response",
+                            lines=14,
+                            interactive=False,
+                        )
+                        batch_selected_normalized = gr.Code(
+                            label="Normalized response used for scoring",
+                            lines=14,
+                            interactive=False,
+                        )
+                with gr.Accordion("Full configured prompt bundle for this result", open=False):
                     gr.Markdown(
-                        """
-Start `codex` or `claude` in the workshop repository, then paste:
+                        "Includes the model/mode-specific full-frame prompt and the possible "
+                        "local recovery sequence. Recovery messages are shown even when an "
+                        "earlier response was accepted; image payloads use placeholders."
+                    )
+                    batch_selected_prompt = gr.Code(
+                        label="Production prompt bundle",
+                        lines=32,
+                        interactive=False,
+                    )
 
-```text
-Read AGENT_CONTEXT.md, WORKSHOP_FLOW.md, CLI_GUIDE.md, and AGENTS.md. Guide me through
-phase 2. Ask me to choose a category, sample size, and model. Run one matched sample in
-baseline and contour-assisted modes, preserving the same ordered pairs. Show me the exact
-vision-inspect command before running it. Summarize verdict accuracy, action grounding,
-item grounding, NIM latency, preprocessing latency, and total latency. Then show the raw
-misses and false alarms rather than hiding them behind the aggregate score. Save the JSON
-evidence under evidence/.
-```
+                selected_outputs = [
+                    batch_selected_reference,
+                    batch_selected_observed,
+                    batch_selected_detail,
+                    batch_selected_raw,
+                    batch_selected_normalized,
+                    batch_selected_prompt,
+                ]
+                batch_baseline_table.select(
+                    inspect_batch_row,
+                    inputs=batch_baseline_state,
+                    outputs=selected_outputs,
+                )
+                batch_contour_table.select(
+                    inspect_batch_row,
+                    inputs=batch_contour_state,
+                    outputs=selected_outputs,
+                )
 
-Useful starting pattern: `./vision-inspect batch --category Shift/Displace --count 10
---model reason2-8b --mode both --output evidence/shift-10.json`.
+            with gr.Tab("3 · Explore", id="explore"):
+                gr.Markdown(
+                    """
+## Customize the inspection stack with Codex/Claude
 
-In JupyterLab, open **Terminal** from the Launcher, then run:
+Use an agent inside the Brev workspace to understand the pipeline, explore one idea, and
+measure whether it actually helps.
+""",
+                    elem_classes=["section-intro"],
+                )
+                gr.Markdown(
+                    """
+### Start in the Jupyter terminal
+
+Open the terminal, then run either agent from the project:
 
 ```bash
 cd /home/nvidia/physical-ai-visual-inspection
-claude  # or: codex
+codex   # or: claude
 ```
-"""
+""",
+                    elem_classes=["agent-tutorial"],
+                )
+                if JUPYTER_URL:
+                    gr.Button(
+                        "Open Jupyter terminal ↗",
+                        link=JUPYTER_URL,
+                        link_target="_blank",
+                        variant="primary",
                     )
-                    if JUPYTER_URL:
-                        gr.Button(
-                            "Open Jupyter terminal ↗",
-                            link=JUPYTER_URL,
-                            link_target="_blank",
-                            size="sm",
-                        )
 
-            with gr.Tab("3 · Explore"):
                 gr.Markdown(
                     """
-## Apply the same loop to a new hypothesis
+### Main exploration prompt
 
-Upload a controlled workspace image pair or load any indexed pair. Change one variable at a
-time, write the expected result first, and test baseline before contour assistance.
-Prioritize small shifts because they were the weakest historical category.
-"""
-                )
-                with gr.Row():
-                    reference = gr.Image(label="Expected workspace", type="pil", height=360)
-                    live = gr.Image(label="Observed workspace", type="pil", height=360)
-                    contour_view = gr.Image(
-                        label="Contour-assisted view",
-                        type="pil",
-                        height=360,
-                        interactive=False,
-                    )
-                with gr.Row():
-                    model = gr.Dropdown(
-                        choices=model_labels(),
-                        value=default_model_label(),
-                        label="NIM",
-                    )
-                    explore_mode = gr.Radio(
-                        choices=["Baseline", "Contour-assisted"],
-                        value="Baseline",
-                        label="Input mode",
-                    )
-                    inspect_button = gr.Button("Inspect workspace", variant="primary")
-                verdict = gr.Markdown("## Waiting for inspection")
-                with gr.Accordion("Reasoning and evidence", open=True):
-                    raw = gr.Textbox(label="Raw NIM response", lines=12)
-                    structured = gr.JSON(label="Structured result")
-                    download_inspection = gr.DownloadButton("Download JSON")
-                inspect_button.click(
-                    run_inspection,
-                    inputs=[reference, live, model, explore_mode],
-                    outputs=[contour_view, verdict, raw, structured],
-                )
-                download_inspection.click(export_result, inputs=structured, outputs=download_inspection)
+Start with this, then let the conversation follow what interests you:
 
-                with gr.Accordion("Load from the organized dataset", open=False):
-                    gr.Markdown(dataset_summary())
-                    with gr.Row():
-                        category = gr.Dropdown(
-                            choices=[
-                                "All",
-                                "Add",
-                                "Remove",
-                                "Replace/Swap",
-                                "Shift/Displace",
-                                "Illumination",
-                                "PASS",
-                                "Curated",
-                                "Other",
-                            ],
-                            value="All",
-                            label="Category",
-                        )
-                        query = gr.Textbox(label="Scene or error search")
-                        search_button = gr.Button("Search")
-                    pair_table = gr.Dataframe(
-                        value=[pair.to_row() for pair in all_pairs[:200]],
-                        headers=TABLE_HEADERS,
-                        interactive=False,
+```text
+Read the workshop context and use the visual-inspection workshop skill. Show me how this
+project compares expected and observed deck images, where prompts and contours enter the
+pipeline, and how verdict, action, object, hallucination, and latency are measured. Help
+me characterize where 2B and 8B are useful or unreliable; whether contours improve
+detection but change action or object quality; which object, action, nuisance, or edge
+cases are missing; and what an ideal inspection case and acceptable physical tolerance
+would be. Ask whether false positives or false negatives are more costly for the intended
+workflow. Then propose one small exploration and explain what its result means for prompts,
+conventional vision, data collection, or fine-tuning.
+```
+
+### Ideas to try next
+
+- **Compare the models:** “Show me where 2B and 8B reason differently on the same pairs.”
+- **Improve a prompt:** “Find one recurring reasoning error and suggest one small prompt change.”
+- **Explore contours:** “Try a few contour settings on one difficult pair and explain the trade-offs.”
+- **Inspect semantics:** “Print verdict, action, and object percentages, then show me the weakest examples.”
+- **Choose the error trade-off:** “For this workflow, which is worse: a false alarm or a missed change?”
+- **Define tolerance:** “What physical deviation should be acceptable, and what should trigger review?”
+- **Find missing cases:** “Which object, action, or nuisance conditions are not represented here?”
+- **Think about data:** “What labeled examples and held-out tests are needed before fine-tuning?”
+
+Keep people, hands, PPE, annotations, and anything off the deck out of scope. Change one
+thing at a time, use the same labeled pairs for comparisons, and ask before a large run
+or model-service switch.
+""",
+                    elem_classes=["agent-tutorial"],
+                )
+
+                with gr.Accordion("Useful CLI starting points", open=False):
+                    gr.Markdown(
+                        """
+
+```bash
+./vision-inspect pairs --collection round1
+./vision-inspect inspect --pair <pair-id> --models reason2-2b reason2-8b --mode both --raw
+./vision-inspect batch --category Shift/Displace --count 10 --model reason2-8b --mode both
+./vision-inspect sweep --pair <pair-id> --model reason2-8b --diff-methods color channel-max edges --thresholds 15 25 35 --min-areas 3000
+```
+""",
                     )
-                    pair_choice = gr.Dropdown(
-                        choices=all_choices,
-                        value=all_choices[0][1] if all_choices else None,
-                        label="Pair to load",
-                    )
-                    load_button = gr.Button("Load pair", variant="primary")
-                    selected_expected = gr.Textbox(label="Expected result")
-                    selected_metadata = gr.JSON(label="Selected pair metadata")
-                    search_button.click(
-                        search_dataset,
-                        inputs=[category, query],
-                        outputs=[pair_table, pair_choice],
-                    )
-                    load_button.click(
-                        load_pair,
-                        inputs=pair_choice,
-                        outputs=[reference, live, selected_expected, selected_metadata],
-                    )
+
+        phase_buttons[0].click(
+            lambda: _select_workshop_tab("first-examples"),
+            outputs=workshop_tabs,
+            queue=False,
+            scroll_to_output=True,
+        )
+        phase_buttons[1].click(
+            lambda: _select_workshop_tab("larger-set"),
+            outputs=workshop_tabs,
+            queue=False,
+            scroll_to_output=True,
+        )
+        phase_buttons[2].click(
+            lambda: _select_workshop_tab("explore"),
+            outputs=workshop_tabs,
+            queue=False,
+            scroll_to_output=True,
+        )
 
     return demo
 

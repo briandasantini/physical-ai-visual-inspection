@@ -36,7 +36,13 @@ ROUND_ONE_SEMANTICS = {
 
 
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
-    return any(term in text for term in terms)
+    return any(
+        re.search(
+            rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])",
+            text,
+        )
+        for term in terms
+    )
 
 
 def expected_semantics(record: dict) -> tuple[str | None, str | None]:

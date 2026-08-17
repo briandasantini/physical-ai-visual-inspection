@@ -1,39 +1,32 @@
-# 3. Add Contours
+# Understand Contour Cues
 
-Contour assistance adds a third image containing pixel-level change cues. It is an
-experimental input—not a finished detection solution.
+Contour assistance adds a third image containing pixel-level change regions. It is an
+attention cue—not proof of a defect and not a finished detection solution.
 
-## Matched comparison
+## Compare matched cases
 
-Rerun the **exact same pairs, model, and sample selection** used during baseline.
+Use the exact same pairs and model for baseline and contour-assisted runs. In **First
+Examples**, compare the two responses directly. In **Larger Set**, compare aggregate
+metrics and then select individual rows to inspect the images and original reasoning.
 
-1. Return to **1 · First Examples** and select **B · Run with contours**.
-2. Compare baseline and contour reasoning for each curated pair.
-3. Return to **2 · Larger Set** and select **B · Rerun same set with contours**.
-4. Select **C · Compare larger-set metrics**.
-5. Export the contour evidence.
+## Ask more than “did accuracy improve?”
 
-## Questions to answer
+- Did the verdict change from a miss to a grounded detection?
+- Did action or object quality improve, regress, or stay wrong?
+- Did the model invent an object or describe the red overlay as physical evidence?
+- Did a nuisance change such as lighting create a false alarm?
+- Did the cue help one category while hurting another?
+- Did the cue change confidence without improving the explanation?
+- Is the preprocessing and total latency worth the observed benefit?
+- Does the result suggest a missing case or an undefined physical tolerance?
 
-- Did the `PASS` or `FAIL` verdict change?
-- Did the explanation identify the real object and location more precisely?
-- Did contours introduce a false alarm?
-- Did the model merely mention the overlay rather than reason about the workspace?
-- Which category remains difficult after visual guidance?
-- What preprocessing and total latency did the contour input add?
+## Interpret the trade-off
 
-## Interpret carefully
+Contours can increase recall by attracting attention to subtle differences, but they can
+also lower precision through false alarms or steer the model toward the wrong action or
+object. The useful setting depends on the intended workflow: the cost of a missed change,
+the cost of unnecessary review, and the amount of physical variation that should be
+accepted.
 
-Contour cues may focus attention, but they do not explain what changed. Improvement on
-one pair does not establish a general solution. A useful conclusion distinguishes:
-
-- verdict improvement;
-- explanation improvement;
-- regressions caused by added visual cues;
-- unchanged failures that may require better data or post-training;
-- latency cost relative to any verdict or grounding gain.
-
-Finish with a matched statement:
-
-> For the same ___ pairs, contour assistance changed ___ verdicts, improved grounding
-> on ___, introduced ___ regressions, and did not solve ___.
+One pair is a clue, not a conclusion. Look for the same effect on a matched sample and
+actively search for a counterexample.

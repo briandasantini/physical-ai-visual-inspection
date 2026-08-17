@@ -1,53 +1,55 @@
-# 3. Agent Experiment Lab
+# 3. Explore With Codex/Claude
 
-Use the embedded terminal to turn an observed weakness into a reproducible cue-generation
-experiment. Ask Codex or Claude to explain the planned command before running it.
+Use the Jupyter terminal to investigate one open question raised by the evidence. A
+contour sweep is one option, not the definition of the exercise.
 
-## Pick one hypothesis
+## Start the conversation
 
-Examples:
+```text
+Read the workshop context and use the visual-inspection workshop skill. Help me explore
+where 2B and 8B work, miss changes, or hallucinate; how contours affect verdict, action,
+and object quality; which error trade-off and physical tolerance matter for the intended
+workflow; which cases are missing; and what data would be needed before fine-tuning.
+Propose one small investigation and explain what its result would mean.
+```
 
-- Low-contrast changes are missed more often than high-contrast changes.
-- A small displacement becomes detectable above a measurable pixel distance.
-- Contours improve localization but increase false alarms under illumination changes.
-- The smaller model reaches the right verdict but grounds explanations less reliably.
+## Short directions to explore
 
-## Change one variable
+- “Show me where 2B and 8B reason differently on the same cases.”
+- “Find one recurring hallucination or semantic error.”
+- “Does the contour improve detection but hurt action or object quality?”
+- “Which is more costly here: a false alarm or a missed change?”
+- “What physical deviation should be acceptable or sent to human review?”
+- “Which object, action, nuisance condition, or edge case is missing?”
+- “What positive, negative, nuisance, and held-out data would fine-tuning require?”
 
-Keep the camera, framing, and surrounding workspace fixed. Change only one factor:
+## If you choose a contour experiment
 
-- object presence;
-- object position;
-- orientation;
-- contrast;
-- illumination;
-- contour difference method;
-- contour threshold;
-- minimum contour area.
-
-Keep the model and inspection prompt fixed. Start with:
+Keep the model, prompt, and pair fixed while varying one cue factor:
 
 ```bash
-./vision-inspect pairs --collection round1
 ./vision-inspect sweep --pair <pair-id> --model reason2-8b \
   --diff-methods color channel-max edges \
   --thresholds 15 25 35 --min-areas 3000 \
   --output evidence/cue-sweep.json
 ```
 
-Compare verdict correctness, action correctness, item correctness, contour regions,
-changed-pixel ratio, preprocessing latency, NIM latency, and total latency.
+Compare verdict, action, object, hallucinations, contour regions, changed-pixel ratio,
+preprocessing latency, NIM latency, and total latency. Explain whether the cue improved
+the physical understanding or merely changed the answer.
 
-## Turn the result into a data plan
+## Turn findings into a requirements and data plan
 
-For a persistent failure, specify:
+Before recommending fine-tuning, describe:
 
-1. the target model;
-2. the failure category;
-3. the missing positive and negative examples;
-4. the required labels for verdict and explanation grounding;
-5. nuisance variation such as lighting, camera, and background;
-6. the held-out evaluation needed to prove improvement.
+1. the intended inspection case and operational decision;
+2. the objects, actions, and locations that matter;
+3. acceptable displacement, angle, occupancy, or appearance tolerance;
+4. the relative cost of false positives and false negatives;
+5. missing positive, negative, boundary, and nuisance examples;
+6. ambiguous cases that need domain-expert labeling;
+7. scene-disjoint validation and untouched held-out tests;
+8. the current baseline that future work must beat without worse hallucination or semantics.
 
-Post-training is justified when a stable, important failure remains after input,
-prompting, and conventional vision controls have been tested.
+The next step may be clearer requirements, better captures, conventional vision, prompt
+work, or fine-tuning. The workshop should discover which—not assume the answer in advance.

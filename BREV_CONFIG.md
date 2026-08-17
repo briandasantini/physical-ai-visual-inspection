@@ -18,7 +18,7 @@ Use these values in the Brev Launchable builder.
 
 - **Runtime mode:** VM Mode
 - **Setup script:** Use the bootstrap script below. It installs or verifies Codex and Claude Code, links the workshop skill, logs Docker into NGC without printing the key, then starts `compose.yaml`.
-- **Jupyter:** Off
+- **Jupyter:** On. Exercise 3 links directly to its terminal for Codex/Claude.
 
 VM Mode is required because the NIM containers come from a registry that needs an NGC
 credential. The Brev Launchable creation guide recommends VM Mode when containers need
@@ -77,6 +77,7 @@ tunnels as the intended access path for Gradio and similar participant applicati
 | `VISUAL_INSPECTION_DATA_SHA256` | Text | Yes | `c6f6b99f4cf239c6238cad510a90981f3b1ced11c7471280de4d3a7d387bcd19` | Pinned SHA-256 for the default workshop bundle. Replace it when selecting `full`. |
 | `VISUAL_INSPECTION_DATA_VERSION` | Text | No | `2026.08.15` | Pins the immutable dataset bundle version. |
 | `VISUAL_INSPECTION_DOCS_URL` | Text | No | `https://briandasantini.github.io/physical-ai-visual-inspection/` | Canonical participant guide linked from the app. |
+| `VISUAL_INSPECTION_JUPYTER_URL` | Text | No | Auto-derived from `BREV_ENV_ID` | Optional explicit override for the Exercise 3 Jupyter terminal link. |
 
 The repository retains private NGC and SharePoint download backends as fallbacks. Do not
 configure them in the attendee Launchable.

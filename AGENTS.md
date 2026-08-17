@@ -7,9 +7,16 @@ modifying this repository. For workshop guidance, also use
 ## Operating rules
 
 - Use `./vision-inspect` instead of direct NIM API calls for workshop exercises.
-- Record the expected label before inference.
-- Run baseline before contour assistance and compare the same pair/sample.
-- Judge verdict correctness and explanation grounding separately.
+- Treat existing labels as reference annotations; do not ask participants to predict or
+  retype them, and never alter a label to match a model response.
+- Frame the workshop as collaborative discovery of model behavior and application needs,
+  not as a PASS/FAIL certification or leaderboard.
+- Compare matched cases across models and cues. Judge verdict, action, object, location,
+  hallucinations, and latency separately.
+- Connect precision to false-alarm cost and recall to missed-change cost. Ask which trade-off
+  and physical tolerance the intended workflow requires instead of assuming one.
+- Record ambiguous labels, missing object/action types, nuisance conditions, and ideal
+  cases as data findings. Treat unlabeled custom pairs as qualitative exploration.
 - Keep generated JSON under `evidence/`.
 - Treat `FAIL` as the positive class for precision, recall, and F1.
 - Never expose `$HOME/.secrets/visual-inspection-ngc-key` or put credentials in commands,
