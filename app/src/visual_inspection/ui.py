@@ -106,10 +106,24 @@ CSS = """
 
 
 DATA_ROOT = os.getenv("VISUAL_INSPECTION_DATA_ROOT", "/data")
-DOCS_URL = os.getenv(
-    "VISUAL_INSPECTION_DOCS_URL",
-    "https://briandasantini.github.io/physical-ai-visual-inspection/",
+DOCS_REVISION = os.getenv(
+    "VISUAL_INSPECTION_DOCS_REVISION",
+    "20260817-start-here-v3",
 ).strip()
+
+
+def _docs_url() -> str:
+    base_url = os.getenv(
+        "VISUAL_INSPECTION_DOCS_URL",
+        "https://briandasantini.github.io/physical-ai-visual-inspection/",
+    ).strip()
+    if not DOCS_REVISION:
+        return base_url
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}v={DOCS_REVISION}"
+
+
+DOCS_URL = _docs_url()
 
 
 def _jupyter_url() -> str:

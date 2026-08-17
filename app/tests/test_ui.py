@@ -7,11 +7,25 @@ from unittest.mock import patch
 from PIL import Image
 
 from visual_inspection.ui import (
+    _docs_url,
     _jupyter_url,
     _select_workshop_tab,
     build_demo,
     inspect_batch_row,
 )
+
+
+class DocsLinkTests(unittest.TestCase):
+    def test_docs_url_uses_deployed_revision_to_bypass_stale_cache(self):
+        with patch.dict(
+            "os.environ",
+            {"VISUAL_INSPECTION_DOCS_URL": "https://docs.example/workshop/"},
+            clear=True,
+        ):
+            self.assertEqual(
+                _docs_url(),
+                "https://docs.example/workshop/?v=20260817-start-here-v3",
+            )
 
 
 class JupyterLinkTests(unittest.TestCase):

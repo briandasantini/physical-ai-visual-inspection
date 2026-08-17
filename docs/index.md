@@ -47,10 +47,6 @@ contour cues improve detection or alter action and object quality, which false-p
 false-negative trade-off the intended workflow needs, what physical tolerance is
 acceptable, which cases are missing, and what data would be necessary before fine-tuning.
 
-This is an exploration rather than a production certification or model leaderboard.
-Dataset labels are reference annotations. People, hands, PPE, annotations, and anything
-outside the deck are not valid inspection evidence.
-
 ## Workshop Map
 
 The workshop moves from concrete model behavior to application questions and a data plan.
