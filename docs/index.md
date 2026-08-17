@@ -4,17 +4,6 @@ Test how NVIDIA Cosmos can check a lab automation deck before an experiment star
 comparing its expected and observed state and detecting removed, added, moved, replaced,
 or reconfigured equipment.
 
-## Objective
-
-The objective is to discover where vision-language models are useful for deck inspection,
-where they miss meaningful changes, and where they produce a correct verdict for the wrong
-reason. We will also test whether pixel-level contour cues focus the models or distort their
-understanding of the action and object.
-
-This is an exploration rather than a production certification or model leaderboard. Dataset
-labels are reference annotations, and people, hands, PPE, annotations, and anything outside
-the deck are not valid inspection evidence.
-
 ## NVIDIA Cosmos vision-language models
 
 NVIDIA Cosmos is a family of open models for physical AI. This workshop explores two
@@ -46,37 +35,53 @@ series: Cosmos Reason2 and Cosmos3.
   [reasoner cookbook](https://github.com/NVIDIA/cosmos/tree/main/cookbooks/cosmos3/reasoner) ·
   [Nano Reasoner NIM](https://catalog.ngc.nvidia.com/orgs/nim/nvidia/containers/cosmos3-reasoner)
 
-For simplicity, the hands-on exercises use the two smallest Reason2 configurations, 2B
-and 8B. Cosmos3 Nano Reasoner is available as an optional comparison. Reason2 32B and
-Cosmos3 Super are introduced here but are not started in the workshop environment.
+The hands-on exercises use Cosmos Reason2 2B and 8B. Cosmos3 Nano Reasoner is available
+as an optional comparison. Reason2 32B and Cosmos3 Super are introduced here but are not
+started in the workshop environment.
 
-## What we are exploring
+## Objective
 
-The workshop asks where the models reason well, where they miss meaningful changes, and
-where they hallucinate unsupported ones. It also asks whether pixel-level contour cues
-improve detection or alter action and object quality, which false-positive/false-negative
-trade-off the intended workflow needs, what physical tolerance is acceptable, which cases
-are missing, and what data would be necessary before fine-tuning.
+The objective is to discover where the models reason well, where they miss meaningful
+deck changes, and where they hallucinate unsupported ones. We will test whether pixel-level
+contour cues improve detection or alter action and object quality, which false-positive or
+false-negative trade-off the intended workflow needs, what physical tolerance is
+acceptable, which cases are missing, and what data would be necessary before fine-tuning.
 
-## What we will do
+This is an exploration rather than a production certification or model leaderboard.
+Dataset labels are reference annotations. People, hands, PPE, annotations, and anything
+outside the deck are not valid inspection evidence.
 
-### 1 · Test the first five examples
+## Workshop Map
 
-Start with five curated image pairs covering a matching setup and several kinds of deck
-change. Compare Cosmos Reason2 2B and 8B, read their original responses, and separate the
-PASS/FAIL verdict from the reported action, object, location, and hallucinations. Then add
-contour cues to the same examples and see what improves or regresses.
+The workshop moves from concrete model behavior to application questions and a data plan.
+Each phase should create a conversation, not just an exported score.
 
-### 2 · Test a larger set
+| Phase | Explore together | Useful evidence |
+|---|---|---|
+| [1 · First examples](workshop/first-examples.md) | Where do 2B and 8B succeed, miss, disagree, or hallucinate? | Images plus original responses and semantic observations |
+| [2 · Larger set](workshop/larger-set.md) | Which patterns generalize, and which new failure types appear? | Verdict/action/object metrics plus selected rows |
+| [Contour cues](workshop/contours.md) | Do cues help detection, hurt semantics, or create false alarms? | Matched baseline/contour cases |
+| [3 · Agent experiment](workshop/explore.md) | What should we investigate next about prompts, cues, tolerances, gaps, or data? | One focused exploration and its implication |
 
-Move beyond the five examples to a selected category and a larger labeled sample. Compare
-accuracy, precision, recall, action and object quality, latency, and individual failures.
-Use the results to discuss whether false alarms or missed changes matter more and whether
-the dataset is missing important objects, actions, tolerances, or nuisance conditions.
+### Keep these questions open
 
-### 3 · Explore with Codex or Claude
+- Is the model right for the right physical reason?
+- Does a contour change only the verdict, or also action and object quality?
+- Which error is worse here: a false alarm or a missed change?
+- What physical deviation should be accepted, rejected, or sent to human review?
+- Which object, action, nuisance condition, or edge case have we not tested?
+- What would an ideal case and a difficult but realistic counterexample look like?
+- What data and held-out test would justify fine-tuning?
 
-Use the Jupyter terminal to investigate one open question about prompts, contours, model
-behavior, acceptable physical tolerances, missing cases, or data needed before fine-tuning.
+### Read evidence on separate axes
 
-[Continue to the Workshop Map](workshop/index.md){ .launch-button }
+1. **Verdict:** Does the result match the dataset reference label?
+2. **Semantics:** Does it name the real action, object, and location?
+3. **Hallucination:** Does it invent unsupported physical evidence?
+4. **Cue effect:** Did contours help, hurt, or merely change confidence?
+5. **Error trade-off:** What do false alarms and missed changes mean operationally?
+6. **Coverage:** Is the case set missing something important?
+7. **Latency:** Is the observed benefit worth the preprocessing and total cost?
+
+A correct verdict with an invented explanation is not a clean success, and a good
+aggregate score can still hide the error type that matters most.

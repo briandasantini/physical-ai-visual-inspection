@@ -24,7 +24,6 @@ nav:
   - Start Here: index.md
   - Launch the Environment: launch.md
   - Workshop:
-      - Workshop Map: workshop/index.md
       - 1. First Examples: workshop/first-examples.md
       - 2. Larger Set: workshop/larger-set.md
       - Understand Contour Cues: workshop/contours.md
